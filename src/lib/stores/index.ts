@@ -81,6 +81,8 @@ export const temporaryChatEnabled = writable(false);
 export const scrollPaginationEnabled = writable(false);
 export const currentChatPage = writable(1);
 
+export const dirHandle = writable<FileSystemDirectoryHandle | null>(null);
+
 export const isLastActiveTab = writable(true);
 export const playingNotificationSound = writable(false);
 

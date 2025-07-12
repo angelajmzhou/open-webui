@@ -2,6 +2,7 @@
 	import { DropdownMenu } from 'bits-ui';
 	import { flyAndScale } from '$lib/utils/transitions';
 	import { getContext, createEventDispatcher } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
@@ -26,7 +27,8 @@
 		getChatPinnedStatusById,
 		toggleChatPinnedStatusById
 	} from '$lib/apis/chats';
-	import { chats, settings, theme, user } from '$lib/stores';
+	import { get } from 'svelte/store';
+	import { chats, settings, theme, user, dirHandle } from '$lib/stores';
 	import { createMessagesList } from '$lib/utils';
 	import { downloadChatAsPDF } from '$lib/apis/utils';
 	import Download from '$lib/components/icons/Download.svelte';
@@ -74,8 +76,27 @@
 		let blob = new Blob([chatText], {
 			type: 'text/plain'
 		});
+		const directory = get(dirHandle);
 
-		saveAs(blob, `chat-${chat.chat.title}.txt`);
+		if(directory != null){
+			try{
+				const fileHandle = await directory.getFileHandle(`chat-${chat.chat.title}.txt`, { create: true });
+				const writable = await fileHandle.createWritable();
+				await writable.write(chatText);
+				await writable.close();
+				toast.success('File saved!');
+			}
+			catch(e){
+				console.error('Failed to save file:', e);
+				toast.error('Failed to save file');
+			}
+		}
+		else{
+			let blob = new Blob([chatText], {
+				type: 'text/plain'
+			});
+			saveAs(blob, `chat-${chat.chat.title}.txt`);
+		}
 	};
 
 	const downloadPdf = async () => {
@@ -147,8 +168,25 @@
 					}
 
 					document.body.removeChild(clonedElement);
+					const directory = get(dirHandle);
 
-					pdf.save(`chat-${chat.chat.title}.pdf`);
+					if(directory != null){
+						try{
+							const fileHandle = await directory.getFileHandle(`chat-${chat.chat.title}.pdf`, { create: true });
+							const writable = await fileHandle.createWritable();
+							const pdfBlob = pdf.output('blob');
+							await writable.write(pdfBlob);
+							await writable.close();
+						}
+						catch(e){
+							console.error('Failed to save file:', e);
+							toast.error('Failed to save file');
+
+						}
+					}
+					else{
+						pdf.save(`chat-${chat.chat.title}.pdf`);
+					}
 				} catch (error) {
 					console.error('Error generating PDF', error);
 				}
@@ -197,7 +235,24 @@
 				// Add empty line at paragraph breaks
 				y += lineHeight * 0.5;
 			}
+			const directory = get(dirHandle);
+			if(directory != null){
+				try{
+					const fileHandle = await directory.getFileHandle(`chat-${chat.chat.title}.pdf`, { create: true });
+					const writable = await fileHandle.createWritable();
+					const pdfBlob = doc.output('blob');
+					await writable.write(pdfBlob);
+					await writable.close();
+				}
+				catch(e){
+					console.error('Failed to save file:', e);
+					toast.error('Failed to save file');
 
+				}
+			}
+			else{
+				doc.save(`chat-${chat.chat.title}.pdf`);
+			}
 			doc.save(`chat-${chat.chat.title}.pdf`);
 		}
 	};
@@ -209,7 +264,20 @@
 			let blob = new Blob([JSON.stringify([chat])], {
 				type: 'application/json'
 			});
-			saveAs(blob, `chat-export-${Date.now()}.json`);
+			const directory = get(dirHandle);
+
+			if(directory != null){
+				try{
+					const fileHandle = await directory.getFileHandle(`chat-export-${Date.now()}.json`, { create: true });
+					const writable = await fileHandle.createWritable();
+					await writable.write(blob);
+					await writable.close();
+				}
+				catch(e){
+					console.error('Failed to save file:', e);
+					toast.error('Failed to save file');
+				}
+			}
 		}
 	};
 

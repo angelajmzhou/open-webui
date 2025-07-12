@@ -8,7 +8,8 @@
 	import { toast } from 'svelte-sonner';
 	import { getAllUserChats } from '$lib/apis/chats';
 	import { exportConfig, importConfig } from '$lib/apis/configs';
-
+	import { dirHandle } from '$lib/stores';
+	import { get } from 'svelte/store';
 	const i18n = getContext('i18n');
 
 	export let saveHandler: Function;
@@ -17,7 +18,23 @@
 		let blob = new Blob([JSON.stringify(await getAllUserChats(localStorage.token))], {
 			type: 'application/json'
 		});
-		saveAs(blob, `all-chats-export-${Date.now()}.json`);
+		const directory = get(dirHandle);
+		if(directory != null){
+			try{
+				const fileHandle = await directory.getFileHandle(`all-chats-export-${Date.now()}.json`, { create: true });
+				const writable = await fileHandle.createWritable();
+				await writable.write(blob);
+				await writable.close();
+				toast.success('File saved!');
+			}
+			catch(e){
+				console.error('Failed to save file:', e);
+				toast.error('Failed to save file');
+			}
+		}else{
+			saveAs(blob, `all-chats-export-${Date.now()}.json`);
+		}
+		
 	};
 
 	onMount(async () => {

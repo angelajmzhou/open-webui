@@ -17,6 +17,7 @@
 	import Connections from './Settings/Connections.svelte';
 	import Documents from './Settings/Documents.svelte';
 	import WebSearch from './Settings/WebSearch.svelte';
+	import Save from './Settings/Save.svelte';
 
 	import ChartBar from '../icons/ChartBar.svelte';
 	import DocumentChartBar from '../icons/DocumentChartBar.svelte';
@@ -45,7 +46,8 @@
 			'audio',
 			'images',
 			'pipelines',
-			'db'
+			'db',
+			'save'
 		].includes(tabFromPath)
 			? tabFromPath
 			: 'general';
@@ -431,6 +433,21 @@
 			</div>
 			<div class=" self-center">{$i18n.t('Database')}</div>
 		</button>
+
+		<button
+			id="save"
+			class="px-0.5 py-1 min-w-fit rounded-lg flex-1 md:flex-none flex text-left transition {selectedTab === 'save' ? '' : ' text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
+			on:click={() => goto('/admin/settings/save')}
+			>
+			<div class="self-center mr-2">
+				<!-- pick whatever icon you like here: -->
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+				<path d="M2 2v12h12V2H2zm11 11H3V3h10v10z"/>
+				<path d="M4 4h8v2H4V4zm0 3h8v2H4V7z"/>
+				</svg>
+			</div>
+			<div class="self-center">{$i18n.t('Save')}</div>
+			</button>
 	</div>
 
 	<div class="flex-1 mt-3 lg:mt-0 overflow-y-scroll pr-1 scrollbar-hidden">
@@ -506,6 +523,13 @@
 					toast.success($i18n.t('Settings saved successfully!'));
 				}}
 			/>
+		{:else if selectedTab === 'save'}
+			<Save
+				saveHandler={async () => {
+				toast.success($i18n.t('Settings saved successfully!'));
+				}}
+			/>
+
 		{:else if selectedTab === 'pipelines'}
 			<Pipelines
 				saveHandler={() => {
