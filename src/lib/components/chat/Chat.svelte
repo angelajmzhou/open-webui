@@ -36,7 +36,8 @@
 		chatTitle,
 		showArtifacts,
 		tools,
-		toolServers
+		toolServers,
+		dirHandle,
 	} from '$lib/stores';
 	import {
 		convertMessagesToHistory,
@@ -1989,6 +1990,27 @@
 				});
 				currentChatPage.set(1);
 				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+				let blob = new Blob([JSON.stringify([chat])], {
+					type: 'application/json'
+				});
+				const directory = get(dirHandle);
+				const cur_user = get(user);
+				console.log(JSON.stringify(cur_user));
+				if(directory != null){
+				try{
+					const userDirectoryHandle = await directory.getDirectoryHandle(`${cur_user!.name}`, { create: true });
+    				const fileHandle = await userDirectoryHandle.getFileHandle(`${_chatId}.json`, { create: true });
+					const writable = await fileHandle.createWritable();
+					await writable.write(blob);
+					await writable.close();
+				}
+				catch(e){
+					console.error('Failed to save file:', e);
+					toast.error('Failed to save file');
+				}
+				}else{
+					console.log("Directory is null");
+				}
 			}
 		}
 	};
