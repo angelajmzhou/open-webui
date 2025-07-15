@@ -50,7 +50,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import Response, StreamingResponse
 
-
+from concurrent.futures import ThreadPoolExecutor
 from open_webui.utils import logger
 from open_webui.utils.audit import AuditLevel, AuditLoggingMiddleware
 from open_webui.utils.logger import start_logger
@@ -538,6 +538,7 @@ async def lifespan(app: FastAPI):
     if hasattr(app.state, "redis_task_command_listener"):
         app.state.redis_task_command_listener.cancel()
 
+from concurrent.futures import ThreadPoolExecutor
 
 app = FastAPI(
     title="Open WebUI",
@@ -547,6 +548,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+@app.on_event("startup")
+def startup_event():
+    app.state.speech_executor = ThreadPoolExecutor(
+        max_workers=10, thread_name_prefix="speech-worker"
+    )
+    
+@app.on_event("shutdown")
+def shutdown_event():
+    app.state.speech_executor.shutdown(wait=True)
 oauth_manager = OAuthManager(app)
 
 app.state.instance_id = None
