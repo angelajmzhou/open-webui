@@ -16,6 +16,7 @@ import aiofiles
 import asyncio
 import requests
 import mimetypes
+import threading
 from fastapi import (
     Depends,
     FastAPI,
@@ -77,6 +78,19 @@ SPEECH_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 
+global _threadpool
+_threadpool = None
+def create_thread_pool(max_workers=10):
+    print("thread pool created")
+    global _threadpool
+    _threadpool = ThreadPoolExecutor(
+        max_workers=10, thread_name_prefix="speech-worker"
+    )
+    
+def kill_thread_pool():
+    global _threadpool
+    print("thread pool shut down")
+    _threadpool.shutdown(wait=True)
 
 def is_audio_conversion_required(file_path):
     """
@@ -310,10 +324,13 @@ def load_speech_pipeline(request):
 @router.post("/speech")
 async def speech(request: Request, user=Depends(get_verified_user)):
     body: bytes = await request.body()
+    global _threadpool
+    if(_threadpool is None):
+        create_thread_pool()
     #get event loop, run blocking fcn in separate thread
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
-        request.app.state.speech_executor, speech_thread_handler, request, body, user
+        _threadpool, speech_thread_handler, request, body, user
     )
 
 def speech_thread_handler(request, body: bytes, user) -> FileResponse:
@@ -342,7 +359,9 @@ def speech_thread_handler(request, body: bytes, user) -> FileResponse:
     #matching audio was already generated, return it
     if file_path.is_file():
         return FileResponse(file_path, media_type="audio/mpeg")
-
+    thread_id = threading.get_ident()  # Get the current thread's identifier
+    thread_name = threading.current_thread().name # Get the current thread's name
+    print(f"Executing in thread ID: {thread_id}, Name: {thread_name}")
     try:
         if engine == "openai":
             headers = {
@@ -396,6 +415,7 @@ def speech_thread_handler(request, body: bytes, user) -> FileResponse:
             file_body_path.write_text(json.dumps(payload))
 
         elif engine == "azure":
+            print("using azure")
             region = cfg.TTS_AZURE_SPEECH_REGION or "eastus"
             base   = cfg.TTS_AZURE_SPEECH_BASE_URL or f"https://{region}.tts.speech.microsoft.com"
             locale = "-".join(cfg.TTS_VOICE.split("-")[:1])
@@ -404,7 +424,7 @@ def speech_thread_handler(request, body: bytes, user) -> FileResponse:
                 f'xml:lang="{locale}"><voice name="{cfg.TTS_VOICE}">'
                 f'{payload["input"]}</voice></speak>'
             )
-
+            
             resp = requests.post(
                 f"{base}/cognitiveservices/v1",
                 data=data,
@@ -414,7 +434,7 @@ def speech_thread_handler(request, body: bytes, user) -> FileResponse:
                     "Content-Type": "application/ssml+xml",
                     "X-Microsoft-OutputFormat": cfg.TTS_AZURE_SPEECH_OUTPUT_FORMAT,
                 },
-                verify=request.app.state.AIOHTTP_CLIENT_SESSION_SSL,
+                verify=AIOHTTP_CLIENT_SESSION_SSL,
             )
             resp.raise_for_status()
             file_path.write_bytes(resp.content)
@@ -455,9 +475,8 @@ def speech_thread_handler(request, body: bytes, user) -> FileResponse:
     except Exception as e:
         log.exception("Speech synthesis failed")
         raise HTTPException(status_code=500, detail=f"Error during speech synthesis: {e}")
-
+    print(f"file_path: {file_path}")
     return FileResponse(file_path)
-
 
 
 def _raise_external(exc: Exception, resp):

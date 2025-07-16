@@ -548,16 +548,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
+from open_webui.routers.audio import create_thread_pool, kill_thread_pool
 @app.on_event("startup")
 def startup_event():
-    app.state.speech_executor = ThreadPoolExecutor(
-        max_workers=10, thread_name_prefix="speech-worker"
-    )
+    print("startup")
+    create_thread_pool()
     
 @app.on_event("shutdown")
 def shutdown_event():
-    app.state.speech_executor.shutdown(wait=True)
+    kill_thread_pool()
+
 oauth_manager = OAuthManager(app)
 
 app.state.instance_id = None

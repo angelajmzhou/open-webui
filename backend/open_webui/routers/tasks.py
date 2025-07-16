@@ -250,7 +250,7 @@ async def generate_title(
 async def generate_follow_ups(
     request: Request, form_data: dict, user=Depends(get_verified_user)
 ):
-
+    return ""
     if not request.app.state.config.ENABLE_FOLLOW_UP_GENERATION:
         return JSONResponse(
             status_code=status.HTTP_200_OK,
