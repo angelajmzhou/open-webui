@@ -352,7 +352,7 @@ def speech_thread_handler(request, body: bytes, user) -> FileResponse:
         + str(request.app.state.config.TTS_ENGINE).encode("utf-8")
         + str(request.app.state.config.TTS_MODEL).encode("utf-8")
     ).hexdigest()
-
+    
     file_path  = Path(SPEECH_CACHE_DIR) / f"{name}.mp3"
     file_body_path = Path(SPEECH_CACHE_DIR) / f"{name}.json"
 
