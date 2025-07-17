@@ -1,0 +1,144 @@
+# Page snapshot
+
+```yaml
+- text: A new version (v0.6.16) is now available.
+- link "Update for the latest features and improvements.":
+  - /url: https://github.com/open-webui/open-webui/releases
+- button
+- navigation:
+  - button "Toggle Sidebar":
+    - img
+  - button "New Chat":
+    - img
+  - button "Select a model":
+    - button "models/gemini-2.0-flash":
+      - text: models/gemini-2.0-flash
+      - img
+  - button "Add Model":
+    - img
+  - button:
+    - button:
+      - img
+  - button "Controls":
+    - img
+  - button "User Menu":
+    - button "User Menu":
+      - img "User profile"
+- paragraph: Best.
+- img "profile"
+- text: models/gemini-2.0-flash
+- paragraph: "That's a great word! To give you a more helpful response, could you tell me what you'd like to know about \"best\"? For example:"
+- list:
+  - listitem:
+    - text: Are you looking for the
+    - strong: best definition
+    - text: of the word "best"?
+  - listitem:
+    - text: Do you want me to list some
+    - strong: synonyms
+    - text: for "best"?
+  - listitem:
+    - text: Are you looking for the
+    - strong: best product
+    - text: in a certain category (e.g., "best phone")?
+  - listitem:
+    - text: Do you want me to help you
+    - strong: compare two things
+    - text: to determine which is best?
+  - listitem:
+    - text: Are you looking for the
+    - strong: best way to do something
+    - text: "?"
+- paragraph: Once I understand what you're asking, I can give you a much more relevant and helpful answer.
+- text: "That's a great word! To give you a more helpful response, could you tell me what you'd like to know about \"best\"? For example: * Are you looking for the **best definition** of the word \"best\"? * Do you want me to list some **synonyms** for \"best\"? * Are you looking for the **best product** in a certain category (e.g., \"best phone\")? * Do you want me to help you **compare two things** to determine which is best? * Are you looking for the **best way to do something**? Once I understand what you're asking, I can give you a much more relevant and helpful answer."
+- paragraph: Best.
+- img "profile"
+- text: models/gemini-2.0-flash
+- paragraph: "Okay, since I still don't have much context, I'll give you some general information about the word \"best\":"
+- paragraph:
+  - strong: "As an adjective, \"best\" means:"
+- list:
+  - listitem:
+    - strong: "Most excellent, effective, or desirable:"
+    - emphasis: This is the best coffee I've ever had.
+  - listitem:
+    - strong: "Most suitable or appropriate:"
+    - emphasis: This is the best time to call him.
+  - listitem:
+    - strong: "Largest, most:"
+    - emphasis: He won the best part of the prize money.
+- paragraph:
+  - strong: "As an adverb, \"best\" means:"
+- list:
+  - listitem:
+    - strong: "In the most excellent or effective way:"
+    - emphasis: Try your best.
+  - listitem:
+    - strong: "Most:"
+    - emphasis: She knows him best.
+- paragraph:
+  - strong: "As a noun, \"best\" means:"
+- list:
+  - listitem:
+    - strong: "The most excellent or desirable thing or person:"
+    - emphasis: He's the best we've got.
+  - listitem:
+    - strong: "One's finest clothes or manners:"
+    - emphasis: She was in her best for the occasion.
+  - listitem:
+    - strong: "(In cards) the highest-ranking card:"
+- paragraph:
+  - strong: "Common phrases with \"best\":"
+- list:
+  - listitem:
+    - strong: "Best of luck:"
+    - text: A phrase used to wish someone good fortune.
+  - listitem:
+    - strong: "All the best:"
+    - text: A common valediction.
+  - listitem:
+    - strong: "Do your best:"
+    - text: To try as hard as possible.
+  - listitem:
+    - strong: "For the best:"
+    - text: With the ultimate intention of achieving a good result.
+- paragraph:
+  - strong: "Synonyms:"
+- list:
+  - listitem: Excellent
+  - listitem: Finest
+  - listitem: Greatest
+  - listitem: Optimal
+  - listitem: Superb
+  - listitem: Top
+- paragraph: To give you a more helpful answer, please provide more context about what you're interested in when you say "best." What are you trying to find the "best" of?
+- button "Edit"
+- button "Copy"
+- button "Read Aloud"
+- button "Good Response"
+- button "Bad Response"
+- button "Continue Response"
+- button "Regenerate"
+- text: "Okay, since I still don't have much context, I'll give you some general information about the word \"best\": **As an adjective, \"best\" means:** * **Most excellent, effective, or desirable:** *This is the best coffee I've ever had.* * **Most suitable or appropriate:** *This is the best time to call him.* * **Largest, most:** *He won the best part of the prize money.* **As an adverb, \"best\" means:** * **In the most excellent or effective way:** *Try your best.* * **Most:** *She knows him best.* **As a noun, \"best\" means:** * **The most excellent or desirable thing or person:** *He's the best we've got.* * **One's finest clothes or manners:** *She was in her best for the occasion.* * **(In cards) the highest-ranking card:** **Common phrases with \"best\":** * **Best of luck:** A phrase used to wish someone good fortune. * **All the best:** A common valediction. * **Do your best:** To try as hard as possible. * **For the best:** With the ultimate intention of achieving a good result. **Synonyms:** * Excellent * Finest * Greatest * Optimal * Superb * Top To give you a more helpful answer, please provide more context about what you're interested in when you say \"best.\" What are you trying to find the \"best\" of?"
+- button:
+  - img
+- paragraph: Send a Message
+- button "More":
+  - button "More":
+    - img
+- button "Code Interpreter":
+  - img
+  - text: Code Interpreter
+- button "Voice Input":
+  - img
+- button "Call"
+- separator
+- button:
+  - img
+- button:
+  - img
+- button "Tap to interrupt"
+- button:
+  - img
+- text: Open WebUI
+```

@@ -425,6 +425,7 @@ def speech_thread_handler(request, body: bytes, user) -> FileResponse:
                 f'{payload["input"]}</voice></speak>'
             )
             
+
             resp = requests.post(
                 f"{base}/cognitiveservices/v1",
                 data=data,

@@ -1,0 +1,77 @@
+# Page snapshot
+
+```yaml
+- text: A new version (v0.6.16) is now available.
+- link "Update for the latest features and improvements.":
+  - /url: https://github.com/open-webui/open-webui/releases
+- button
+- navigation:
+  - button "Toggle Sidebar":
+    - img
+  - button "New Chat":
+    - img
+  - button "Select a model":
+    - button "models/gemini-2.5-flash":
+      - text: models/gemini-2.5-flash
+      - img
+  - button "Add Model":
+    - img
+  - button:
+    - button:
+      - img
+  - button "Controls":
+    - img
+  - button "User Menu":
+    - button "User Menu":
+      - img "User profile"
+- paragraph: Best.
+- img "profile"
+- text: models/gemini-2.5-flash
+- paragraph: Best!
+- paragraph:
+  - text: But the best
+  - emphasis: what
+  - text: "?"
+- list:
+  - listitem:
+    - strong: The best movie?
+  - listitem:
+    - strong: The best song?
+  - listitem:
+    - strong: The best feeling?
+  - listitem:
+    - strong: The best invention?
+  - listitem:
+    - strong: The best day?
+  - listitem:
+    - strong: The best strategy for world domination?
+    - text: (Just kidding... mostly)
+- paragraph: You'll have to give me a category! 😄
+- button "Edit"
+- button "Copy"
+- button "Read Aloud"
+- button "Good Response"
+- button "Bad Response"
+- button "Continue Response"
+- button "Regenerate"
+- text: Best! But the best *what*? * **The best movie?** * **The best song?** * **The best feeling?** * **The best invention?** * **The best day?** * **The best strategy for world domination?** (Just kidding... mostly) You'll have to give me a category! 😄
+- paragraph: Send a Message
+- button "More":
+  - button "More":
+    - img
+- button "Code Interpreter":
+  - img
+  - text: Code Interpreter
+- button "Voice Input":
+  - img
+- button "Call"
+- separator
+- button:
+  - img
+- button:
+  - img
+- button "Tap to interrupt"
+- button:
+  - img
+- text: Open WebUI
+```
