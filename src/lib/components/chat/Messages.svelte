@@ -107,6 +107,7 @@
 			});
 
 			currentChatPage.set(1);
+			//save the chat in frontend storage
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));
 		}
 	};

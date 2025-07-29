@@ -153,16 +153,7 @@ export const getChatListByUserId = async (
 		})
 		.then((json) => {
 			return json;
-		})
-		.catch((err) => {
-			error = err;
-			console.error(err);
-			return null;
-		});
-
-	if (error) {
-		throw error;
-	}
+		})WEBUI_API_BASE_URL
 
 	return res.map((chat) => ({
 		...chat,
@@ -249,6 +240,38 @@ export const getAllChats = async (token: string) => {
 
 	return res;
 };
+
+export const getAllUserFeedback = async (token: string) => {
+	let error = null;
+
+	const res = await fetch(`${WEBUI_API_BASE_URL}/chats/all/feedback`, {
+		method: 'GET',
+		headers: {
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
+			...(token && { authorization: `Bearer ${token}` })
+		}
+	})
+		.then(async (res) => {
+			if (!res.ok) throw await res.json();
+			return res.json();
+		})
+		.then((json) => {
+			return json;
+		})
+		.catch((err) => {
+			error = err;
+			console.error(err);
+			return null;
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	return res;
+};
+
 
 export const getChatListBySearchText = async (token: string, text: string, page: number = 1) => {
 	let error = null;
