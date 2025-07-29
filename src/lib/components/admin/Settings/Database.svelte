@@ -21,10 +21,15 @@
 	};
 
 	const exportAllUserFeedback = async () => {
-		let blob = new Blob([JSON.stringify(await getAllUserFeedback(localStorage.token))], {
-			type: 'application/json'
-		});
-		saveAs(blob, `all-feedback-export-${Date.now()}.json`);
+		try {
+			let blob = new Blob([JSON.stringify(await getAllUserFeedback(localStorage.token))], {
+				type: 'application/json'
+			});
+			saveAs(blob, `all-feedback-export-${Date.now()}.json`);
+		} catch (error: any) {
+			console.error('Error exporting feedback:', error);
+			toast.error(`Failed to export feedback: ${error.message || error}`);
+		}
 	};
 
 	onMount(async () => {

@@ -557,6 +557,9 @@ class ChatTable:
                 .order_by(Chat.updated_at.desc())
             )
             return [ChatModel.model_validate(chat) for chat in all_chats]
+    
+                
+
 
     def get_chats_by_user_id(self, user_id: str) -> list[ChatModel]:
         with get_db() as db:

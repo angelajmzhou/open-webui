@@ -153,7 +153,7 @@ export const getChatListByUserId = async (
 		})
 		.then((json) => {
 			return json;
-		})WEBUI_API_BASE_URL
+		})
 
 	return res.map((chat) => ({
 		...chat,
@@ -244,7 +244,7 @@ export const getAllChats = async (token: string) => {
 export const getAllUserFeedback = async (token: string) => {
 	let error = null;
 
-	const res = await fetch(`${WEBUI_API_BASE_URL}/chats/all/feedback`, {
+	const res = await fetch(`${WEBUI_API_BASE_URL}/evaluations/feedbacks/all/export`, {
 		method: 'GET',
 		headers: {
 			Accept: 'application/json',
