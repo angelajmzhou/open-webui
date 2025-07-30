@@ -65,7 +65,7 @@ async def get_all_feedbacks(user=Depends(get_admin_user)):
     feedbacks = Feedbacks.get_all_feedbacks()
     return [
         FeedbackUserResponse(
-            **feedback.model_dump(), user=Users.get_user_by_id(feedback.user_id)
+            **feedback.model_dump(), user=Users.get_user_by_id(feedback.user_id), message=feedback.snapshot["chat"]["chat"]["history"]["messages"][feedback.meta["message_id"]]["content"]
         )
         for feedback in feedbacks
     ]
