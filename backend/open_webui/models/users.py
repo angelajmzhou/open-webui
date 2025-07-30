@@ -69,23 +69,6 @@ class UserModel(BaseModel):
 ####################
 
 
-class UserListResponse(BaseModel):
-    users: list[UserModel]
-    total: int
-
-
-class UserInfoResponse(BaseModel):
-    id: str
-    name: str
-    email: str
-    role: str
-
-
-class UserInfoListResponse(BaseModel):
-    users: list[UserInfoResponse]
-    total: int
-
-
 class UserResponse(BaseModel):
     id: str
     name: str

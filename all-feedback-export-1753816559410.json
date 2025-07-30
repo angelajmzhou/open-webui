@@ -1,0 +1,195 @@
+[{"id":"2b2d1d78-33ac-4ac0-ba0f-fe5b6683213a","user_id":"2c9c1515-1f06-4490-8fd5-58e6f41cf505","version":0,"type":"rating",
+"data":
+    {"rating":1,
+    "model_id":"models/gemini-2.5-flash",
+    "sibling_model_ids":null,
+    "reason":"positive_attitude",
+    "comment":"friendly!",
+    "tags":["General"],
+    "details":{"rating":9}},
+"meta":
+    {"model_id":"models/gemini-2.5-flash",
+    "message_id":"6eee2464-fd0e-4771-a5fb-0ff10d4821de",
+    "message_index":2,
+    "chat_id":"b01130ab-c833-4e16-ad25-381eb4f328c5",
+    "base_models":{"models/gemini-2.5-flash":null}},
+    "snapshot":{"chat":{"id":"b01130ab-c833-4e16-ad25-381eb4f328c5",
+    "user_id":"2c9c1515-1f06-4490-8fd5-58e6f41cf505",
+    "title":"Hello, How Can I Help? 👋",
+    "chat":{"id":"","title":"Hello, How Can I Help? 👋",
+    "models":["models/gemini-2.5-flash"],
+    "params":{},
+    "history":
+        {"messages":
+        {
+        "3f51f6b4-799d-45a0-a950-6a4feb22f689":
+            {"id":"3f51f6b4-799d-45a0-a950-6a4feb22f689",
+            "parentId":null,
+            "childrenIds":["6eee2464-fd0e-4771-a5fb-0ff10d4821de"],
+            "role":"user",
+            "content":"hi!",
+            "timestamp":1753816536,
+            "models":["models/gemini-2.5-flash"]},
+            
+        "6eee2464-fd0e-4771-a5fb-0ff10d4821de":
+            {"parentId":"3f51f6b4-799d-45a0-a950-6a4feb22f689",
+            "id":"6eee2464-fd0e-4771-a5fb-0ff10d4821de",
+            "childrenIds":[],
+            "role":"assistant",
+            "content":"Hi there! How can I help you today?",
+            "model":"models/gemini-2.5-flash",
+            "modelName":"models/gemini-2.5-flash",
+            "modelIdx":0,
+            "timestamp":1753816536,
+            "done":true,
+            "annotation":
+                {"rating":1,"tags":["General"]},
+                "feedbackId":"2b2d1d78-33ac-4ac0-ba0f-fe5b6683213a"},
+                "currentId":"6eee2464-fd0e-4771-a5fb-0ff10d4821de"},
+                "messages":[{"id":"3f51f6b4-799d-45a0-a950-6a4feb22f689",
+                "parentId":null,"childrenIds":["6eee2464-fd0e-4771-a5fb-0ff10d4821de"],
+                "role":"user","content":"hi!","timestamp":1753816536,"models":["models/gemini-2.5-flash"]},
+                {"parentId":"3f51f6b4-799d-45a0-a950-6a4feb22f689","id":"6eee2464-fd0e-4771-a5fb-0ff10d4821de","childrenIds":[],
+                "role":"assistant","content":"Hi there! How can I help you today?","model":"models/gemini-2.5-flash",
+                "modelName":"models/gemini-2.5-flash","modelIdx":0,"timestamp":1753816536,"done":true,"annotation":{"rating":1,"tags":["General"]},
+                "feedbackId":"2b2d1d78-33ac-4ac0-ba0f-fe5b6683213a"}],"tags":[],"timestamp":1753816536162,"files":[]},
+
+"updated_at":1753816541,"created_at":1753816536,"share_id":null,"archived":false,"pinned":false,"meta":{"tags":["general"]},"folder_id":null}},
+"created_at":1753816539,"updated_at":1753816549}]
+
+//what getfeedbackbyid returns
+{
+    "id": "89baf150-99b6-478d-9d17-12c55834d4d0",
+    "user_id": "2c9c1515-1f06-4490-8fd5-58e6f41cf505",
+    "version": 0,
+    "type": "rating",
+    "data": {
+        "rating": -1,
+        "model_id": "models/gemini-2.5-flash-lite",
+        "sibling_model_ids": null,
+        "reason": "too_verbose",
+        "comment": "Too long",
+        "tags": [
+            "Health"
+        ],
+        "details": {
+            "rating": 3
+        }
+    },
+    "meta": {
+        "arena": true,
+        "model_id": "arena-model",
+        "message_id": "cd61f06b-0fdf-4a2c-8c94-ac82a5b8724f",
+        "message_index": 2,
+        "chat_id": "9f9070a8-888c-44fd-b005-796c72f1a19e",
+        "base_models": {
+            "models/gemini-2.5-flash-lite": null
+        }
+    },
+    "snapshot": {
+        "chat": {
+            "id": "9f9070a8-888c-44fd-b005-796c72f1a19e",
+            "user_id": "2c9c1515-1f06-4490-8fd5-58e6f41cf505",
+            "title": "New Chat",
+            "chat": {
+                "id": "",
+                "title": "New Chat",
+                "models": [
+                    "arena-model"
+                ],
+                "params": {},
+                "history": {
+                    "messages": {
+                        "fc2d11cd-a138-4cec-89bd-cf0798a67aca": {
+                            "id": "fc2d11cd-a138-4cec-89bd-cf0798a67aca",
+                            "parentId": null,
+                            "childrenIds": [
+                                "cd61f06b-0fdf-4a2c-8c94-ac82a5b8724f"
+                            ],
+                            "role": "user",
+                            "content": "how do i fix my sleep schedule",
+                            "timestamp": 1753813674,
+                            "models": [
+                                "arena-model"
+                            ]
+                        },
+                        "cd61f06b-0fdf-4a2c-8c94-ac82a5b8724f": {
+                            "parentId": "fc2d11cd-a138-4cec-89bd-cf0798a67aca",
+                            "id": "cd61f06b-0fdf-4a2c-8c94-ac82a5b8724f",
+                            "childrenIds": [],
+                            "role": "assistant",
+                            "content": "Fixing a sleep schedule can be challenging, but it's definitely achievable with consistency and a few smart adjustments. Here's a comprehensive guide to help you get back on track:\n\n**1. Understand the Foundation: Sleep Hygiene**\n\nBefore diving into schedule changes, ensure you're practicing good sleep hygiene. This is the bedrock of healthy sleep.\n\n*   **Consistent Wake-Up Time:** This is arguably the MOST important factor. Aim to wake up around the same time every single day, *even on weekends*. This helps regulate your body's internal clock (circadian rhythm).\n*   **Consistent Bedtime:** Once you have a wake-up time, work backward to establish a bedtime that allows for 7-9 hours of sleep.\n*   **Create a Relaxing Bedtime Routine:** Signal to your body that it's time to wind down. This could include:\n    *   **Warm bath or shower:** Can help lower body temperature, promoting sleep.\n    *   **Reading a physical book:** Avoid screens.\n    *   **Gentle stretching or yoga:** Releases tension.\n    *   **Meditation or deep breathing exercises:** Calms the mind.\n    *   **Listening to calming music or a podcast:** Choose something that doesn't stimulate you.\n*   **Optimize Your Sleep Environment:**\n    *   **Darkness:** Make your bedroom as dark as possible. Use blackout curtains if necessary.\n    *   **Quiet:** Minimize noise distractions. Earplugs or a white noise machine can be helpful.\n    *   **Cool Temperature:** Most people sleep best in a cooler room (around 60-67°F or 15-19°C).\n    *   **Comfortable Bedding:** Ensure your mattress and pillows are supportive and comfortable.\n*   **Limit Caffeine and Alcohol:**\n    *   **Caffeine:** Avoid caffeine for at least 4-6 hours before bedtime. Be mindful of hidden caffeine in tea, chocolate, and some medications.\n    *   **Alcohol:** While alcohol might make you feel drowsy initially, it disrupts sleep later in the night, leading to poorer quality sleep. Avoid it close to bedtime.\n*   **Avoid Heavy Meals Before Bed:** Finish your last substantial meal at least 2-3 hours before sleep. A light snack is okay if you're hungry.\n*   **Regular Exercise:** Physical activity can improve sleep quality, but try to avoid intense workouts within 2-3 hours of bedtime.\n*   **Limit Napping:** If you must nap, keep it short (20-30 minutes) and avoid napping late in the afternoon, as this can interfere with nighttime sleep.\n\n**2. Gradual Adjustment: The Key to Success**\n\nDon't try to overhaul your entire sleep schedule overnight. Gradual adjustments are more sustainable and less disruptive.\n\n*   **Shift Your Wake-Up Time:** If your current wake-up time is too late, try setting your alarm 15-30 minutes earlier each day (or every few days) until you reach your desired wake-up time.\n*   **Adjust Your Bedtime Accordingly:** Once your wake-up time is set, adjust your bedtime to ensure you're getting enough sleep.\n*   **Resist the Urge to Sleep In (Especially on Weekends):** This is crucial. Sleeping in on weekends can effectively \"reset\" your circadian rhythm, making it harder to get back on track during the week.\n\n**3. Mindset and Patience**\n\n*   **Be Patient:** It takes time to retrain your body. Don't get discouraged if you don't see results immediately. Stick with it!\n*   **Don't Force Sleep:** If you can't fall asleep after 20 minutes, get out of bed and do something quiet and relaxing in dim light (e.g., read a book). Return to bed when you feel drowsy. This prevents associating your bed with frustration.\n*   **Manage Stress:** Stress and anxiety are major sleep disruptors. Incorporate stress-management techniques into your day, such as mindfulness, journaling, or talking to someone.\n\n**4. When to Seek Professional Help**\n\nIf you've consistently implemented these strategies for several weeks and are still struggling with your sleep schedule or experiencing other sleep-related problems, it's time to consult a doctor or a sleep specialist. They can help rule out underlying sleep disorders like:\n\n*   **Insomnia:** Difficulty falling or staying asleep.\n*   **Sleep Apnea:** Pauses in breathing during sleep.\n*   **Restless Legs Syndrome (RLS):** An urge to move your legs, often accompanied by unpleasant sensations.\n*   **Circadian Rhythm Sleep Disorders:** When your internal body clock is misaligned with the external environment.\n\n**Step-by-Step Action Plan Example:**\n\nLet's say your current schedule is waking up at 9 AM and going to bed around 1 AM, and you want to wake up at 7 AM.\n\n1.  **Week 1:**\n    *   Set your alarm for 8:45 AM.\n    *   Try to go to bed by 12:45 AM.\n    *   Focus on establishing a consistent bedtime routine.\n2.  **Week 2:**\n    *   Set your alarm for 8:30 AM.\n    *   Try to go to bed by 12:30 AM.\n3.  **Continue this gradual adjustment by 15-30 minutes every few days until you reach your target wake-up time of 7 AM.**\n4.  **Once you hit 7 AM, aim for a bedtime of 11 PM (or whatever time allows for 7-9 hours of sleep).**\n5.  **Crucially, stick to your 7 AM wake-up time every day, including weekends.**\n\n**Key Takeaways for Success:**\n\n*   **Consistency is king.**\n*   **Gradual changes are more effective.**\n*   **Prioritize good sleep hygiene.**\n*   **Be patient and don't get discouraged.**\n*   **Seek professional help if needed.**\n\nGood luck! It takes effort, but the rewards of a well-rested mind and body are immense.",
+                            "model": "arena-model",
+                            "modelName": "Arena Model",
+                            "modelIdx": 0,
+                            "timestamp": 1753813674,
+                            "selectedModelId": "models/gemini-2.5-flash-lite",
+                            "arena": true,
+                            "lastSentence": "Crucially, stick to your 7 AM wake-up time every day, including weekends.\nKey Takeaways for Success:\nConsistency is king.\nGradual changes are more effective.\nPrioritize good sleep hygiene.\nBe patient and don't get discouraged.\nSeek professional help if needed.\nGood luck!",
+                            "done": true,
+                            "annotation": {
+                                "rating": -1,
+                                "tags": []
+                            },
+                            "feedbackId": "89baf150-99b6-478d-9d17-12c55834d4d0"
+                        }
+                    },
+                    "currentId": "cd61f06b-0fdf-4a2c-8c94-ac82a5b8724f"
+                },
+                "messages": [
+                    {
+                        "id": "fc2d11cd-a138-4cec-89bd-cf0798a67aca",
+                        "parentId": null,
+                        "childrenIds": [
+                            "cd61f06b-0fdf-4a2c-8c94-ac82a5b8724f"
+                        ],
+                        "role": "user",
+                        "content": "how do i fix my sleep schedule",
+                        "timestamp": 1753813674,
+                        "models": [
+                            "arena-model"
+                        ]
+                    },
+                    {
+                        "parentId": "fc2d11cd-a138-4cec-89bd-cf0798a67aca",
+                        "id": "cd61f06b-0fdf-4a2c-8c94-ac82a5b8724f",
+                        "childrenIds": [],
+                        "role": "assistant",
+                        "content": "Fixing a sleep schedule can be challenging, but it's definitely achievable with consistency and a few smart adjustments. Here's a comprehensive guide to help you get back on track:\n\n**1. Understand the Foundation: Sleep Hygiene**\n\nBefore diving into schedule changes, ensure you're practicing good sleep hygiene. This is the bedrock of healthy sleep.\n\n*   **Consistent Wake-Up Time:** This is arguably the MOST important factor. Aim to wake up around the same time every single day, *even on weekends*. This helps regulate your body's internal clock (circadian rhythm).\n*   **Consistent Bedtime:** Once you have a wake-up time, work backward to establish a bedtime that allows for 7-9 hours of sleep.\n*   **Create a Relaxing Bedtime Routine:** Signal to your body that it's time to wind down. This could include:\n    *   **Warm bath or shower:** Can help lower body temperature, promoting sleep.\n    *   **Reading a physical book:** Avoid screens.\n    *   **Gentle stretching or yoga:** Releases tension.\n    *   **Meditation or deep breathing exercises:** Calms the mind.\n    *   **Listening to calming music or a podcast:** Choose something that doesn't stimulate you.\n*   **Optimize Your Sleep Environment:**\n    *   **Darkness:** Make your bedroom as dark as possible. Use blackout curtains if necessary.\n    *   **Quiet:** Minimize noise distractions. Earplugs or a white noise machine can be helpful.\n    *   **Cool Temperature:** Most people sleep best in a cooler room (around 60-67°F or 15-19°C).\n    *   **Comfortable Bedding:** Ensure your mattress and pillows are supportive and comfortable.\n*   **Limit Caffeine and Alcohol:**\n    *   **Caffeine:** Avoid caffeine for at least 4-6 hours before bedtime. Be mindful of hidden caffeine in tea, chocolate, and some medications.\n    *   **Alcohol:** While alcohol might make you feel drowsy initially, it disrupts sleep later in the night, leading to poorer quality sleep. Avoid it close to bedtime.\n*   **Avoid Heavy Meals Before Bed:** Finish your last substantial meal at least 2-3 hours before sleep. A light snack is okay if you're hungry.\n*   **Regular Exercise:** Physical activity can improve sleep quality, but try to avoid intense workouts within 2-3 hours of bedtime.\n*   **Limit Napping:** If you must nap, keep it short (20-30 minutes) and avoid napping late in the afternoon, as this can interfere with nighttime sleep.\n\n**2. Gradual Adjustment: The Key to Success**\n\nDon't try to overhaul your entire sleep schedule overnight. Gradual adjustments are more sustainable and less disruptive.\n\n*   **Shift Your Wake-Up Time:** If your current wake-up time is too late, try setting your alarm 15-30 minutes earlier each day (or every few days) until you reach your desired wake-up time.\n*   **Adjust Your Bedtime Accordingly:** Once your wake-up time is set, adjust your bedtime to ensure you're getting enough sleep.\n*   **Resist the Urge to Sleep In (Especially on Weekends):** This is crucial. Sleeping in on weekends can effectively \"reset\" your circadian rhythm, making it harder to get back on track during the week.\n\n**3. Mindset and Patience**\n\n*   **Be Patient:** It takes time to retrain your body. Don't get discouraged if you don't see results immediately. Stick with it!\n*   **Don't Force Sleep:** If you can't fall asleep after 20 minutes, get out of bed and do something quiet and relaxing in dim light (e.g., read a book). Return to bed when you feel drowsy. This prevents associating your bed with frustration.\n*   **Manage Stress:** Stress and anxiety are major sleep disruptors. Incorporate stress-management techniques into your day, such as mindfulness, journaling, or talking to someone.\n\n**4. When to Seek Professional Help**\n\nIf you've consistently implemented these strategies for several weeks and are still struggling with your sleep schedule or experiencing other sleep-related problems, it's time to consult a doctor or a sleep specialist. They can help rule out underlying sleep disorders like:\n\n*   **Insomnia:** Difficulty falling or staying asleep.\n*   **Sleep Apnea:** Pauses in breathing during sleep.\n*   **Restless Legs Syndrome (RLS):** An urge to move your legs, often accompanied by unpleasant sensations.\n*   **Circadian Rhythm Sleep Disorders:** When your internal body clock is misaligned with the external environment.\n\n**Step-by-Step Action Plan Example:**\n\nLet's say your current schedule is waking up at 9 AM and going to bed around 1 AM, and you want to wake up at 7 AM.\n\n1.  **Week 1:**\n    *   Set your alarm for 8:45 AM.\n    *   Try to go to bed by 12:45 AM.\n    *   Focus on establishing a consistent bedtime routine.\n2.  **Week 2:**\n    *   Set your alarm for 8:30 AM.\n    *   Try to go to bed by 12:30 AM.\n3.  **Continue this gradual adjustment by 15-30 minutes every few days until you reach your target wake-up time of 7 AM.**\n4.  **Once you hit 7 AM, aim for a bedtime of 11 PM (or whatever time allows for 7-9 hours of sleep).**\n5.  **Crucially, stick to your 7 AM wake-up time every day, including weekends.**\n\n**Key Takeaways for Success:**\n\n*   **Consistency is king.**\n*   **Gradual changes are more effective.**\n*   **Prioritize good sleep hygiene.**\n*   **Be patient and don't get discouraged.**\n*   **Seek professional help if needed.**\n\nGood luck! It takes effort, but the rewards of a well-rested mind and body are immense.",
+                        "model": "arena-model",
+                        "modelName": "Arena Model",
+                        "modelIdx": 0,
+                        "timestamp": 1753813674,
+                        "selectedModelId": "models/gemini-2.5-flash-lite",
+                        "arena": true,
+                        "lastSentence": "Crucially, stick to your 7 AM wake-up time every day, including weekends.\nKey Takeaways for Success:\nConsistency is king.\nGradual changes are more effective.\nPrioritize good sleep hygiene.\nBe patient and don't get discouraged.\nSeek professional help if needed.\nGood luck!",
+                        "done": true,
+                        "annotation": {
+                            "rating": -1,
+                            "tags": []
+                        },
+                        "feedbackId": "89baf150-99b6-478d-9d17-12c55834d4d0"
+                    }
+                ],
+                "tags": [],
+                "timestamp": 1753813674871,
+                "files": []
+            },
+            "updated_at": 1753813681,
+            "created_at": 1753813674,
+            "share_id": null,
+            "archived": false,
+            "pinned": false,
+            "meta": {
+                "tags": [
+                    "lifestyle",
+                    "sleep",
+                    "health"
+                ]
+            },
+            "folder_id": null
+        }
+    },
+    "created_at": 1753813680,
+    "updated_at": 1753813694
+}

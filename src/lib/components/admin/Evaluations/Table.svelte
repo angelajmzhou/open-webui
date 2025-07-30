@@ -9,7 +9,7 @@
 
 	import { onMount, getContext } from 'svelte';
 	const i18n = getContext('i18n');
-
+	import { getAllUsers } from '$lib/apis/users';
 	import { deleteFeedbackById, exportAllFeedbacks, getAllFeedbacks } from '$lib/apis/evaluations';
 
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
@@ -26,6 +26,21 @@
 	import { WEBUI_BASE_URL } from '$lib/constants';
 
 	export let feedbacks = [];
+    let user_filter = '';
+	
+	// Ensure feedbacks is always an array
+	$: safeFeedbacks = Array.isArray(feedbacks) ? feedbacks : [];
+	
+	let users: string[] = [];
+
+    onMount(async () => {
+        try {
+            const types = await getAllUsers(localStorage.token);
+            users = [...types.users.map((user: any) => user.name)];
+        } catch (error) {
+            console.error('Failed to load user types:', error);
+        }
+    });
 
 	let page = 1;
 	$: paginatedFeedbacks = sortedFeedbacks.slice((page - 1) * 10, page * 10);
@@ -70,7 +85,15 @@
 		page = 1;
 	}
 
-	$: sortedFeedbacks = [...feedbacks].sort((a, b) => {
+	// Filter feedbacks based on user_filter
+	$: filteredFeedbacks = user_filter 
+		? safeFeedbacks.filter(feedback => {
+			// Match by user name or user ID
+			return feedback.user?.name === user_filter || feedback.user?.id === user_filter;
+		})
+		: safeFeedbacks;
+	
+	$: sortedFeedbacks = [...filteredFeedbacks].sort((a, b) => {
 		let aVal, bVal;
 
 		switch (orderBy) {
@@ -83,8 +106,8 @@
 				bVal = b.data.model_id || '';
 				return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
 			case 'rating':
-				aVal = a.data.rating;
-				bVal = b.data.rating;
+				aVal = a.data.details.rating;
+				bVal = b.data.details.rating;
 				return direction === 'asc' ? aVal - bVal : bVal - aVal;
 			case 'updated_at':
 				aVal = a.updated_at;
@@ -97,6 +120,7 @@
 
 	let showFeedbackModal = false;
 	let selectedFeedback = null;
+
 
 	const openFeedbackModal = (feedback) => {
 		showFeedbackModal = true;
@@ -124,33 +148,6 @@
 		}
 	};
 
-	const shareHandler = async () => {
-		toast.success($i18n.t('Redirecting you to Open WebUI Community'));
-
-		// remove snapshot from feedbacks
-		const feedbacksToShare = feedbacks.map((f) => {
-			const { snapshot, user, ...rest } = f;
-			return rest;
-		});
-		console.log(feedbacksToShare);
-
-		const url = 'https://openwebui.com';
-		const tab = await window.open(`${url}/leaderboard`, '_blank');
-
-		// Define the event handler function
-		const messageHandler = (event) => {
-			if (event.origin !== url) return;
-			if (event.data === 'loaded') {
-				tab.postMessage(JSON.stringify(feedbacksToShare), '*');
-
-				// Remove the event listener after handling the message
-				window.removeEventListener('message', messageHandler);
-			}
-		};
-
-		window.addEventListener('message', messageHandler, false);
-	};
-
 	const exportHandler = async () => {
 		const _feedbacks = await exportAllFeedbacks(localStorage.token).catch((err) => {
 			toast.error(err);
@@ -170,14 +167,14 @@
 
 <div class="mt-0.5 mb-2 gap-1 flex flex-row justify-between">
 	<div class="flex md:self-center text-lg font-medium px-0.5">
-		{$i18n.t('Feedback History')}
+		{$i18n.t('Feedback Spreadsheet')}
 
 		<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850" />
 
-		<span class="text-lg font-medium text-gray-500 dark:text-gray-300">{feedbacks.length}</span>
+		<span class="text-lg font-medium text-gray-500 dark:text-gray-300">{safeFeedbacks.length}</span>
 	</div>
 
-	{#if feedbacks.length > 0}
+	{#if safeFeedbacks.length > 0}
 		<div>
 			<Tooltip content={$i18n.t('Export')}>
 				<button
@@ -196,13 +193,13 @@
 <div
 	class="scrollbar-hidden relative whitespace-nowrap overflow-x-auto max-w-full rounded-sm pt-0.5"
 >
-	{#if (feedbacks ?? []).length === 0}
+	{#if safeFeedbacks.length === 0}
 		<div class="text-center text-xs text-gray-500 dark:text-gray-400 py-1">
 			{$i18n.t('No feedbacks found')}
 		</div>
 	{:else}
 		<table
-			class="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-auto max-w-full rounded-sm"
+			class="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-auto rounded-sm"
 		>
 			<thead
 				class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-850 dark:text-gray-400"
@@ -213,21 +210,16 @@
 						class="px-3 py-1 cursor-pointer select-none"
 						on:click={() => setSortKey('user')}
 					>
-						<div class="flex gap-1.5 items-center justify-end">
-							{$i18n.t('User')}
-							{#if orderBy === 'user'}
-								<span class="font-normal">
-									{#if direction === 'asc'}
-										<ChevronUp className="size-2" />
-									{:else}
-										<ChevronDown className="size-2" />
-									{/if}
-								</span>
-							{:else}
-								<span class="invisible">
-									<ChevronUp className="size-2" />
-								</span>
-							{/if}
+						<div class="flex gap-1.5 items-center justify-start">
+                            <select 
+                                bind:value={user_filter}
+                                class="text-xs text-gray-700 dark:text-gray-400 bg-transparent outline-none border-none cursor-pointer w-15"
+                            >
+                                <option value="">{$i18n.t('USERS')}</option>
+                                {#each users as userType}
+                                    <option value={userType}>{userType}</option>
+                                {/each}
+                            </select>
 						</div>
 					</th>
 
@@ -253,14 +245,13 @@
 							{/if}
 						</div>
 					</th>
-
 					<th
 						scope="col"
 						class="px-3 py-1 text-right cursor-pointer select-none"
 						on:click={() => setSortKey('rating')}
 					>
-						<div class="flex gap-1.5 items-center justify-end">
-							{$i18n.t('Result')}
+						<div class="flex gap-1.5 items-center justify-start">
+							{$i18n.t('Rating')}
 							{#if orderBy === 'rating'}
 								<span class="font-normal">
 									{#if direction === 'asc'}
@@ -276,13 +267,36 @@
 							{/if}
 						</div>
 					</th>
-
+                    <th
+						scope="col"
+						class="px-3 py-1 cursor-pointer select-none text-right"
+					    >
+						<div class="flex gap-1.5 items-center justify-start">
+							{$i18n.t('Reason')}
+						</div>
+					</th>
+                    <th
+						scope="col"
+						class="px-3 py-1 cursor-pointer select-none text-left"
+					    >
+						<div class="flex gap-1.5 items-center justify-start">
+							{$i18n.t('Comment')}
+						</div>
+					</th>
+                    <th
+						scope="col"
+						class="px-3 py-1 cursor-pointer select-none text-left"
+					    >
+						<div class="flex gap-1.5 items-center justify-start">
+							{$i18n.t('Message')}
+						</div>
+					</th>
 					<th
 						scope="col"
 						class="px-3 py-1 text-right cursor-pointer select-none"
 						on:click={() => setSortKey('updated_at')}
 					>
-						<div class="flex gap-1.5 items-center justify-end">
+						<div class="flex gap-1.5 items-center justify-center">
 							{$i18n.t('Updated At')}
 							{#if orderBy === 'updated_at'}
 								<span class="font-normal">
@@ -300,7 +314,7 @@
 						</div>
 					</th>
 
-					<th scope="col" class="px-3 py-1 text-right cursor-pointer select-none"> </th>
+					<th scope="col" class="px-3 py-1 text-right cursor-pointer select-none w-8"> </th>
 				</tr>
 			</thead>
 			<tbody class="">
@@ -310,11 +324,12 @@
 						on:click={() => openFeedbackModal(feedback)}
 					>
 						<td class="px-3 py-1 text-right font-semibold">
-							<div class="flex justify-end items-center gap-2">
+							<div class="flex justify-center items-center gap-2">
 								<img
 									src={feedback?.user?.profile_image_url ?? `${WEBUI_BASE_URL}/user.png`}
 									alt=""
 									class="size-5 rounded-full object-cover shrink-0"
+
 								/>
 								<span class="text-xs text-gray-600 dark:text-gray-400 truncate max-w-32">
 									{feedback?.user?.name}
@@ -353,30 +368,45 @@
 								</div>
 							</div>
 						</td>
-						<td class="px-3 py-1 text-right font-medium text-gray-900 dark:text-white">
-							<div class=" flex justify-end">
-								{#if feedback.data.rating.toString() === '1'}
-									<Badge type="info" content={$i18n.t('Won')} />
-								{:else if feedback.data.rating.toString() === '0'}
-									<Badge type="muted" content={$i18n.t('Draw')} />
-								{:else if feedback.data.rating.toString() === '-1'}
-									<Badge type="error" content={$i18n.t('Lost')} />
-								{/if}
+                        <td class="px-3 py-1 text-right font-medium text-gray-900 dark:text-white">
+							<div class="flex items-center justify-start">
+								<span>{feedback.data.details.rating.toString()}</span>
 							</div>
 						</td>
-
-						<td class="px-3 py-1 text-right font-medium">
-							{dayjs(feedback.updated_at * 1000).fromNow()}
+                        <td class="px-3 py-1 text-left font-medium text-gray-900 dark:text-white">
+							<div class="flex gap-1.5 items-center justify-start">
+								<span>
+									{feedback.data.reason.slice(0, 100)}
+								</span>
+							</div>
 						</td>
-
-						<td class="px-3 py-1 text-right font-semibold" on:click={(e) => e.stopPropagation()}>
+                        <td class="px-3 py-1 text-left font-medium text-gray-900 dark:text-white">
+							<div class="flex gap-1.5 items-center justify-start">
+								<span>
+									{feedback.data.comment.slice(0, 100)}
+								</span>
+							</div>
+						</td>
+                        <td class="px-3 py-1 text-left font-medium text-gray-900 dark:text-white">
+							<div class="flex gap-1.5 items-center justify-start">
+									<span>
+                                     {feedback?.message?.slice(0, 100) || ''}
+								</span>
+							</div>
+						</td>
+						<td class="px-11 py-1 text-right font-medium">
+                            <div class="flex items-center justify-end">
+								{dayjs(feedback.updated_at * 1000).fromNow()}
+							</div>
+						</td>
+						<td class="px-3 py-1 text-right font-semibold w-8" on:click={(e) => e.stopPropagation()}>
 							<FeedbackMenu
 								on:delete={(e) => {
 									deleteFeedbackHandler(feedback.id);
 								}}
 							>
 								<button
-									class="self-center w-fit text-sm p-1.5 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
+									class="w-6 h-6 flex items-center justify-center text-sm dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded"
 								>
 									<EllipsisHorizontal />
 								</button>
@@ -389,37 +419,6 @@
 	{/if}
 </div>
 
-{#if feedbacks.length > 0}
-	<div class=" flex flex-col justify-end w-full text-right gap-1">
-		<div class="line-clamp-1 text-gray-500 text-xs">
-			{$i18n.t('Help us create the best community leaderboard by sharing your feedback history!')}
-		</div>
-
-		<div class="flex space-x-1 ml-auto">
-			<Tooltip
-				content={$i18n.t(
-					'To protect your privacy, only ratings, model IDs, tags, and metadata are shared from your feedback—your chat logs remain private and are not included.'
-				)}
-			>
-				<button
-					class="flex text-xs items-center px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-gray-200 transition"
-					on:click={async () => {
-						shareHandler();
-					}}
-				>
-					<div class=" self-center mr-2 font-medium line-clamp-1">
-						{$i18n.t('Share to Open WebUI Community')}
-					</div>
-
-					<div class=" self-center">
-						<CloudArrowUp className="size-3" strokeWidth="3" />
-					</div>
-				</button>
-			</Tooltip>
-		</div>
-	</div>
-{/if}
-
-{#if feedbacks.length > 10}
-	<Pagination bind:page count={feedbacks.length} perPage={10} />
+	{#if safeFeedbacks.length > 10}
+	<Pagination bind:page count={safeFeedbacks.length} perPage={10} />
 {/if}

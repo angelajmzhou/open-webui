@@ -166,11 +166,10 @@ export const getUsers = async (
 	return res;
 };
 
-export const getAllUsers = async (token: string) => {
+export const getUsers = async (token: string) => {
 	let error = null;
-	let res = null;
 
-	res = await fetch(`${WEBUI_API_BASE_URL}/users/all`, {
+	const res = await fetch(`${WEBUI_API_BASE_URL}/users/`, {
 		method: 'GET',
 		headers: {
 			'Content-Type': 'application/json',
@@ -191,7 +190,7 @@ export const getAllUsers = async (token: string) => {
 		throw error;
 	}
 
-	return res;
+	return res ? res : [];
 };
 
 export const getUserSettings = async (token: string) => {
