@@ -192,7 +192,96 @@ class Loader:
     def _get_loader(self, filename: str, file_content_type: str, file_path: str):
         file_ext = filename.split(".")[-1].lower()
 
-        if self.engine == "tika" and self.kwargs.get("TIKA_SERVER_URL"):
+        if file_ext in ["png", "jpg", "jpeg", "gif"]:
+            # Always use ImageLoader for images, regardless of engine setting
+            class ImageLoader:
+                def __init__(self, file_path, ocr_config):
+                    self.file_path = file_path
+                    self.ocr_config = ocr_config
+                def load(self):
+                    import os
+                    
+                    ext = os.path.splitext(self.file_path)[1].lower()
+                    content_type = {
+                        '.png': 'image/png',
+                        '.jpg': 'image/jpeg',
+                        '.jpeg': 'image/jpeg',
+                        '.gif': 'image/gif'
+                    }.get(ext, 'image/png')
+                    
+                    # Try OCR if available
+                    ocr_text = ""
+                    has_ocr = False
+                    
+                    # Try Mistral OCR first
+                    if self.ocr_config.get("MISTRAL_OCR_API_KEY"):
+                        try:
+                            from .mistral import MistralLoader
+                            mistral_loader = MistralLoader(
+                                api_key=self.ocr_config.get("MISTRAL_OCR_API_KEY"), 
+                                file_path=self.file_path
+                            )
+                            ocr_docs = mistral_loader.load()
+                            if ocr_docs and ocr_docs[0].page_content:
+                                ocr_text = ocr_docs[0].page_content
+                                has_ocr = True
+                        except Exception as e:
+                            print(f"Mistral OCR failed: {e}")
+                    
+                    # Try Tika OCR if Mistral failed
+                    if not has_ocr and self.ocr_config.get("TIKA_SERVER_URL"):
+                        try:
+                            tika_loader = TikaLoader(
+                                url=self.ocr_config.get("TIKA_SERVER_URL"),
+                                file_path=self.file_path,
+                                mime_type=content_type,
+                            )
+                            tika_docs = tika_loader.load()
+                            if tika_docs and tika_docs[0].page_content:
+                                ocr_text = tika_docs[0].page_content
+                                has_ocr = True
+                        except Exception as e:
+                            print(f"Tika OCR failed: {e}")
+                    
+                    # Try Docling OCR if others failed
+                    if not has_ocr and self.ocr_config.get("DOCLING_SERVER_URL"):
+                        try:
+                            docling_loader = DoclingLoader(
+                                url=self.ocr_config.get("DOCLING_SERVER_URL"),
+                                file_path=self.file_path,
+                                mime_type=content_type,
+                            )
+                            docling_docs = docling_loader.load()
+                            if docling_docs and docling_docs[0].page_content:
+                                ocr_text = docling_docs[0].page_content
+                                has_ocr = True
+                        except Exception as e:
+                            print(f"Docling OCR failed: {e}")
+                    
+                    # Convert image to base64 for transport
+                    import base64
+                    with open(self.file_path, 'rb') as f:
+                        image_data = f.read()
+                        base64_data = base64.b64encode(image_data).decode('utf-8')
+                    
+                    # Store OCR text in content for search/editing
+                    if has_ocr:
+                        combined_content = ocr_text
+                    else:
+                        combined_content = "[No OCR text available]"
+                    
+                    return [Document(
+                        page_content=combined_content,
+                        metadata={
+                            "content_type": content_type,
+                            "file_type": "image",
+                            "has_ocr": has_ocr,
+                            "ocr_text": ocr_text if has_ocr else "",
+                            "image_base64": base64_data
+                        }
+                    )]
+            loader = ImageLoader(file_path, self.kwargs)
+        elif self.engine == "tika" and self.kwargs.get("TIKA_SERVER_URL"):
             if self._is_text_file(file_ext, file_content_type):
                 loader = TextLoader(file_path, autodetect_encoding=True)
             else:

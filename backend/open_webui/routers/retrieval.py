@@ -1070,12 +1070,41 @@ def process_file(
             text_content = " ".join([doc.page_content for doc in docs])
 
         log.debug(f"text_content: {text_content}")
+        
+        # For images, also store OCR text in file data
+        file_data_update = {"content": text_content}
+        if file.meta.get("content_type", "").startswith("image/"):
+            # Extract OCR text from document metadata
+            ocr_text = None
+            for doc in docs:
+                if doc.metadata.get("ocr_text"):
+                    ocr_text = doc.metadata["ocr_text"]
+                    break
+            
+            if ocr_text:
+                file_data_update["meta"] = {"ocr_text": ocr_text}
+        
         Files.update_file_data_by_id(
             file.id,
-            {"content": text_content},
+            file_data_update,
         )
 
-        hash = calculate_sha256_string(text_content)
+        # For images, use base64 data for hash to detect actual duplicate images
+        if file.meta.get("content_type", "").startswith("image/"):
+            # Get the base64 data from the document metadata
+            image_base64 = None
+            for doc in docs:
+                if doc.metadata.get("image_base64"):
+                    image_base64 = doc.metadata["image_base64"]
+                    break
+            
+            if image_base64:
+                hash = calculate_sha256_string(image_base64)
+            else:
+                # Fallback to file ID if base64 not available
+                hash = calculate_sha256_string(f"{file.id}:{text_content}")
+        else:
+            hash = calculate_sha256_string(text_content)
         Files.update_file_hash_by_id(file.id, hash)
 
         if not request.app.state.config.BYPASS_EMBEDDING_AND_RETRIEVAL:

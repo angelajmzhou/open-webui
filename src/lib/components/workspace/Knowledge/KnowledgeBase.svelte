@@ -25,6 +25,7 @@
 	import { transcribeAudio } from '$lib/apis/audio';
 	import { blobToFile } from '$lib/utils';
 	import { processFile } from '$lib/apis/retrieval';
+	import { WEBUI_BASE_URL } from '$lib/constants';
 
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import Files from './KnowledgeBase/Files.svelte';
@@ -363,7 +364,6 @@
 				return null;
 			}
 		);
-
 		if (updatedKnowledge) {
 			knowledge = updatedKnowledge;
 			toast.success($i18n.t('File added successfully.'));
@@ -726,12 +726,61 @@
 								class=" flex-1 w-full h-full max-h-full text-sm bg-transparent outline-hidden overflow-y-auto scrollbar-hidden"
 							>
 								{#key selectedFile.id}
-									<RichTextInput
-										className="input-prose-sm"
-										bind:value={selectedFile.data.content}
-										placeholder={$i18n.t('Add content here')}
-										preserveBreaks={true}
-									/>
+									{#if selectedFile.data && selectedFile.data.content}
+										{#if selectedFile.meta.content_type && selectedFile.meta.content_type.startsWith('image/')}
+											<div class="space-y-4">
+												<!-- Display the image -->
+												<div class="flex justify-center items-center w-full">
+													<img 
+														src={`${WEBUI_BASE_URL}/api/v1/files/${selectedFile.id}/content`}
+														alt="Uploaded image" 
+														class="max-w-full max-h-96 rounded-lg"
+														style="min-width: 100px; min-height: 100px;"
+														on:load={(e) => {
+															console.log('Image loaded successfully:', e.target && e.target.src);
+															console.log('Image dimensions:', e.target && e.target.naturalWidth, 'x', e.target && e.target.naturalHeight);
+															console.log('Image display dimensions:', e.target && e.target.offsetWidth, 'x', e.target && e.target.offsetHeight);
+														}}
+														on:error={(e) => {
+															console.error('Image load error:', e.target && e.target.src);
+															console.error('File ID:', selectedFile.id);
+															console.error('File path:', selectedFile.path);
+															console.error('File meta:', selectedFile.meta);
+														}}
+													/>
+												</div>
+												<!-- Display OCR text if available -->
+												{#if selectedFile.data.meta && selectedFile.data.meta.ocr_text}
+													<div class="mt-4">
+														<div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+															{$i18n.t('Extracted Text:')}
+														</div>
+														<RichTextInput
+															className="input-prose-sm"
+															bind:value={selectedFile.data.meta.ocr_text}
+															placeholder={$i18n.t('OCR text will appear here')}
+															preserveBreaks={true}
+														/>
+													</div>
+												{:else}
+													<div class="mt-4 text-sm text-gray-500 text-center">
+														{$i18n.t('No OCR text available')}
+													</div>
+												{/if}
+											</div>
+										{:else}
+											<RichTextInput
+												className="input-prose-sm"
+												bind:value={selectedFile.data.content}
+												placeholder={$i18n.t('Add content here')}
+												preserveBreaks={true}
+											/>
+										{/if}
+									{:else}
+										<div class="text-gray-500 text-center py-4">
+											{$i18n.t('No content available for this file')}
+										</div>
+									{/if}
 								{/key}
 							</div>
 						</div>
@@ -783,13 +832,58 @@
 							<div
 								class=" flex-1 w-full h-full max-h-full py-2.5 px-3.5 rounded-lg text-sm bg-transparent overflow-y-auto scrollbar-hidden"
 							>
+							
 								{#key selectedFile.id}
-									<RichTextInput
-										className="input-prose-sm"
-										bind:value={selectedFile.data.content}
-										placeholder={$i18n.t('Add content here')}
-										preserveBreaks={true}
-									/>
+									{#if selectedFile.data && selectedFile.data.content}
+										{#if selectedFile.meta.content_type && selectedFile.meta.content_type.startsWith('image/')}
+											<div class="space-y-4">
+												<!-- Display the image -->
+													<img 
+														src={`${WEBUI_BASE_URL}/api/v1/files/${selectedFile.id}/content`}
+														alt="Uploaded image" 
+														class="max-w-full max-h-96 rounded-lg"
+														style="min-width: 100px; min-height: 100px;"
+														on:load={(e) => {
+															console.log('Image loaded successfully:', e.target.src);
+															console.log('Image dimensions:', e.target.naturalWidth, 'x', e.target.naturalHeight);
+															console.log('Image display dimensions:', e.target.offsetWidth, 'x', e.target.offsetHeight);
+														}}
+
+													/>
+												<!-- Display OCR text if available -->
+												{#if selectedFile.data && selectedFile.data.meta && selectedFile.data.meta.ocr_text}
+													<div class="mt-4">
+														<div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+															{$i18n.t('Extracted Text:')}
+														</div>
+														<RichTextInput
+															className="input-prose-sm"
+															bind:value={selectedFile.data.meta.ocr_text}
+															placeholder={$i18n.t('OCR text will appear here')}
+															preserveBreaks={true}
+														/>
+													</div>
+												{:else}
+													<div class="mt-4 text-sm text-gray-500 text-center">
+														<div>{$i18n.t('No OCR text available')}</div>
+														<div class="text-xs mt-1">Debug: {JSON.stringify(selectedFile.data?.meta || 'No meta data')}</div>
+														<div class="text-xs mt-1">Content preview: {selectedFile.data.content ? selectedFile.data.content.substring(0, 100) + '...' : 'No content'}</div>
+													</div>
+												{/if}
+											</div>
+										{:else}
+											<RichTextInput
+												className="input-prose-sm"
+												bind:value={selectedFile.data.content}
+												placeholder={$i18n.t('Add content here')}
+												preserveBreaks={true}
+											/>
+										{/if}
+									{:else}
+										<div class="text-gray-500 text-center py-4">
+											{$i18n.t('No content available for this file')}
+										</div>
+									{/if}
 								{/key}
 							</div>
 						</div>

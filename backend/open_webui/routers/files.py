@@ -129,9 +129,8 @@ def upload_file(
                         ProcessFileForm(file_id=id, content=result.get("text", "")),
                         user=user,
                     )
-                elif file.content_type not in ["image/png", "image/jpeg", "image/gif"]:
+                else:
                     process_file(request, ProcessFileForm(file_id=id), user=user)
-
                 file_item = Files.get_file_by_id(id=id)
             except Exception as e:
                 log.exception(e)
@@ -259,7 +258,6 @@ async def get_file_by_id(id: str, user=Depends(get_verified_user)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
-
     if (
         file.user_id == user.id
         or user.role == "admin"
@@ -395,6 +393,11 @@ async def get_file_content_by_id(
                             f"inline; filename*=UTF-8''{encoded_filename}"
                         )
                         content_type = "application/pdf"
+                    elif content_type.startswith("image/"):
+                        # Images should be displayed inline
+                        headers["Content-Disposition"] = (
+                            f"inline; filename*=UTF-8''{encoded_filename}"
+                        )
                     elif content_type != "text/plain":
                         headers["Content-Disposition"] = (
                             f"attachment; filename*=UTF-8''{encoded_filename}"

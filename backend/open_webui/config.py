@@ -1846,7 +1846,7 @@ RAG_FILE_MAX_SIZE = PersistentConfig(
     (
         int(os.environ.get("RAG_FILE_MAX_SIZE"))
         if os.environ.get("RAG_FILE_MAX_SIZE")
-        else None
+        else 100 * 1024 * 1024  # Default to 100MB
     ),
 )
 
