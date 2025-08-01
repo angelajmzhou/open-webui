@@ -46,6 +46,7 @@
 	export let messageInput = false;
 	export let shiftEnter = false;
 	export let largeTextAsFile = false;
+	export let readonly = false;
 
 	let element;
 	let editor;
@@ -194,6 +195,7 @@
 			],
 			content: content,
 			autofocus: messageInput ? true : false,
+			editable: !readonly,
 			onTransaction: () => {
 				// force re-render so `editor.isActive` works as expected
 				editor = editor;

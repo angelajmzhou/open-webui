@@ -11,21 +11,20 @@
 	import { page } from '$app/stores';
 	import { mobile, showSidebar, knowledge as _knowledge, config, user } from '$lib/stores';
 
-	import { updateFileDataContentById, uploadFile, deleteFileById } from '$lib/apis/files';
+	import { uploadFile, deleteFileById } from '$lib/apis/files';
 	import {
 		addFileToKnowledgeById,
 		getKnowledgeById,
 		getKnowledgeBases,
 		removeFileFromKnowledgeById,
 		resetKnowledgeById,
-		updateFileFromKnowledgeById,
-		updateKnowledgeById
+			updateKnowledgeById
 	} from '$lib/apis/knowledge';
 
 	import { transcribeAudio } from '$lib/apis/audio';
 	import { blobToFile } from '$lib/utils';
 	import { processFile } from '$lib/apis/retrieval';
-	import { WEBUI_BASE_URL } from '$lib/constants';
+	import { WEBUI_BASE_URL, WEBUI_API_BASE_URL } from '$lib/constants';
 
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import Files from './KnowledgeBase/Files.svelte';
@@ -36,6 +35,7 @@
 
 	import SyncConfirmDialog from '../../common/ConfirmDialog.svelte';
 	import RichTextInput from '$lib/components/common/RichTextInput.svelte';
+	import Markdown from '$lib/components/chat/Messages/Markdown.svelte';
 	import EllipsisVertical from '$lib/components/icons/EllipsisVertical.svelte';
 	import Drawer from '$lib/components/common/Drawer.svelte';
 	import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
@@ -392,27 +392,7 @@
 		}
 	};
 
-	const updateFileContentHandler = async () => {
-		const fileId = selectedFile.id;
-		const content = selectedFile.data.content;
 
-		const res = updateFileDataContentById(localStorage.token, fileId, content).catch((e) => {
-			toast.error(`${e}`);
-		});
-
-		const updatedKnowledge = await updateFileFromKnowledgeById(
-			localStorage.token,
-			id,
-			fileId
-		).catch((e) => {
-			toast.error(`${e}`);
-		});
-
-		if (res && updatedKnowledge) {
-			knowledge = updatedKnowledge;
-			toast.success($i18n.t('File content updated successfully.'));
-		}
-	};
 
 	const changeDebounceHandler = () => {
 		console.log('debounce');
@@ -701,25 +681,10 @@
 								{/if}
 
 								<div class=" flex-1 text-xl font-medium">
-									<a
-										class="hover:text-gray-500 dark:hover:text-gray-100 hover:underline grow line-clamp-1"
-										href={selectedFile.id ? `/api/v1/files/${selectedFile.id}/content` : '#'}
-										target="_blank"
-									>
 										{decodeString(selectedFile?.meta?.name)}
-									</a>
 								</div>
 
-								<div>
-									<button
-										class="self-center w-fit text-sm py-1 px-2.5 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg"
-										on:click={() => {
-											updateFileContentHandler();
-										}}
-									>
-										{$i18n.t('Save')}
-									</button>
-								</div>
+
 							</div>
 
 							<div
@@ -757,9 +722,10 @@
 														</div>
 														<RichTextInput
 															className="input-prose-sm"
-															bind:value={selectedFile.data.content}
+															value={selectedFile.data.content}
 															placeholder={$i18n.t('OCR text will appear here')}
 															preserveBreaks={true}
+															readonly={true}
 														/>
 													</div>
 												{:else}
@@ -770,7 +736,7 @@
 												</div>
 										{:else if selectedFile.meta.content_type && selectedFile.meta.content_type == 'text/csv'}
 											<div class="space-y-4">
-												<!-- Render CSV as editable table -->
+												<!-- Render CSV as read-only table -->
 												{#if selectedFile?.data?.content}
 													<div class="overflow-x-auto">
 														<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
@@ -779,28 +745,13 @@
 																	<tr class={rowIndex === 0 ? 'font-bold bg-gray-100 dark:bg-gray-800' : ''}>
 																		{#each row.split(',') as cell, cellIndex}
 																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
-																				<input
-																					type="text"
-																					value={cell}
-																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
-																					on:input={(e) => {
-																						// Update the cell value
-																						const rows = selectedFile.data.content.trim().split('\n');
-																						const cells = rows[rowIndex].split(',');
-																						cells[cellIndex] = e.target.value;
-																						rows[rowIndex] = cells.join(',');
-																						selectedFile.data.content = rows.join('\n');
-																					}}
-																				/>
+																				{cell}
 																			</td>
 																		{/each}
 																	</tr>
 																{/each}
 															</tbody>
 														</table>
-													</div>
-													<div class="mt-2 text-xs text-gray-500">
-														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
 													</div>
 												{:else}
 													<div class="text-gray-500 text-center py-4">
@@ -810,7 +761,7 @@
 											</div>
 										{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('excel') || selectedFile.meta.content_type.includes('spreadsheet') || selectedFile.filename?.toLowerCase().endsWith('.xlsx') || selectedFile.filename?.toLowerCase().endsWith('.xls'))}
 											<div class="space-y-4">
-												<!-- Render Excel as a table -->
+												<!-- Render Excel as a read-only table -->
 												{#if selectedFile?.data?.content}
 													<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
 														<tbody>
@@ -825,19 +776,7 @@
 																	<tr>
 																		{#each row.split(',') as cell, cellIndex}
 																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
-																				<input
-																					type="text"
-																					value={cell}
-																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
-																					on:input={(e) => {
-																						// Update the cell value
-																						const rows = selectedFile.data.content.trim().split('\n');
-																						const cells = rows[rowIndex].split(',');
-																						cells[cellIndex] = e.target.value;
-																						rows[rowIndex] = cells.join(',');
-																						selectedFile.data.content = rows.join('\n');
-																					}}
-																				/>
+																				{cell}
 																			</td>
 																		{/each}
 																	</tr>
@@ -845,21 +784,57 @@
 															{/each}
 														</tbody>
 													</table>
-													<div class="mt-2 text-xs text-gray-500">
-														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
-													</div>
 												{:else}
 													<div class="text-gray-500 text-center py-4">
 														{$i18n.t('No Excel content available')}
 													</div>
 												{/if}
 											</div>
+											{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('pdf'))}
+											<div class="space-y-4">
+												<iframe
+													title={selectedFile?.meta?.name}
+													src={`${WEBUI_API_BASE_URL}/files/${selectedFile.id}/content`}
+													class="w-full h-[70vh] border-0 rounded-lg mt-4"
+												/>
+											</div>
+											{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('wordprocessingml') || selectedFile.meta.content_type.includes('docx') || selectedFile.meta.content_type.includes('doc') || selectedFile.filename?.toLowerCase().endsWith('.docx') || selectedFile.filename?.toLowerCase().endsWith('.doc'))}
+											<div class="space-y-4">
+												<!-- Display .docx as PDF (auto-converted) -->
+												<iframe
+													title={selectedFile?.meta?.name}
+													src={`${WEBUI_API_BASE_URL}/files/${selectedFile.id}/content`}
+													class="w-full h-[70vh] border-0 rounded-lg mt-4"
+												/>
+											</div>
+										{:else if selectedFile.meta.content_type === 'text/markdown' || selectedFile.filename?.toLowerCase().endsWith('.md') || selectedFile.filename?.toLowerCase().endsWith('.markdown')}
+											<div class="space-y-4">
+												<!-- Render Markdown with proper formatting -->
+												{#if selectedFile?.data?.content}
+													<div class="markdown-prose max-h-[70vh] overflow-y-auto w-full max-w-none mx-auto">
+														<Markdown
+															id={`file-${selectedFile.id}`}
+															content={selectedFile.data.content}
+															model={null}
+															save={false}
+															sourceIds={[]}
+															onSourceClick={() => {}}
+															onTaskClick={() => {}}
+														/>
+													</div>
+												{:else}
+													<div class="text-gray-500 text-center py-4">
+														{$i18n.t('No markdown content available')}
+													</div>
+												{/if}
+											</div>
 										{:else}
 											<RichTextInput
 												className="input-prose-sm"
-												bind:value={selectedFile.data.content}
-												placeholder={$i18n.t('Add content here')}
+												value={selectedFile.data.content}
+												placeholder={$i18n.t('Content will appear here')}
 												preserveBreaks={true}
+												readonly={true}
 											/>
 										{/if}
 									{:else}
@@ -903,16 +878,7 @@
 									{selectedFile?.meta?.name}
 								</div>
 
-								<div>
-									<button
-										class="self-center w-fit text-sm py-1 px-2.5 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg"
-										on:click={() => {
-											updateFileContentHandler();
-										}}
-									>
-										{$i18n.t('Save')}
-									</button>
-								</div>
+
 							</div>
 
 							<div
@@ -944,16 +910,17 @@
 														</div>
 														<RichTextInput
 															className="input-prose-sm"
-															bind:value={selectedFile.data.content}
+															value={selectedFile.data.content}
 															placeholder={$i18n.t('OCR text will appear here')}
 															preserveBreaks={true}
+															readonly={true}
 														/>
 													</div>
 												{/if}
 											</div>
 										{:else if selectedFile.meta.content_type && selectedFile.meta.content_type == 'text/csv'}
 											<div class="space-y-4">
-												<!-- Render CSV as editable table -->
+												<!-- Render CSV as read-only table -->
 												{#if selectedFile?.data?.content}
 													<div class="overflow-x-auto">
 														<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
@@ -962,19 +929,7 @@
 																	<tr class={rowIndex === 0 ? 'font-bold bg-gray-100 dark:bg-gray-800' : ''}>
 																		{#each row.split(',') as cell, cellIndex}
 																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
-																				<input
-																					type="text"
-																					value={cell}
-																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
-																					on:input={(e) => {
-																						// Update the cell value
-																						const rows = selectedFile.data.content.trim().split('\n');
-																						const cells = rows[rowIndex].split(',');
-																						cells[cellIndex] = e.target.value;
-																						rows[rowIndex] = cells.join(',');
-																						selectedFile.data.content = rows.join('\n');
-																					}}
-																				/>
+																				{cell}
 																			</td>
 																		{/each}
 																	</tr>
@@ -982,18 +937,36 @@
 															</tbody>
 														</table>
 													</div>
-													<div class="mt-2 text-xs text-gray-500">
-														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
-													</div>
 												{:else}
 													<div class="text-gray-500 text-center py-4">
 														{$i18n.t('No CSV content available')}
 													</div>
 												{/if}
 											</div>
+										{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('pdf'))}
+											<div class="space-y-4">
+												<iframe
+													title={selectedFile?.meta?.name}
+													src={`${WEBUI_API_BASE_URL}/files/${selectedFile.id}/content`}
+													class="w-full h-[60vh] border-0 rounded-lg"
+												/>
+											</div>
+										{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('wordprocessingml') || selectedFile.meta.content_type.includes('docx') || selectedFile.meta.content_type.includes('doc') || selectedFile.filename?.toLowerCase().endsWith('.docx') || selectedFile.filename?.toLowerCase().endsWith('.doc'))}
+											<div class="space-y-4">
+												<!-- Display .doc/.docx as PDF (auto-converted) -->
+												<iframe
+													title={selectedFile?.meta?.name}
+													src={`${WEBUI_API_BASE_URL}/files/${selectedFile.id}/content`}
+													class="w-full h-[50vh] border-0 rounded-lg"
+													on:error={() => {
+														// Fallback to text content if PDF conversion fails
+														console.log('PDF conversion failed, showing text content');
+													}}
+												/>
+											</div>
 										{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('excel') || selectedFile.meta.content_type.includes('spreadsheet') || selectedFile.filename?.toLowerCase().endsWith('.xlsx') || selectedFile.filename?.toLowerCase().endsWith('.xls'))}
 											<div class="space-y-4">
-												<!-- Render Excel as a table -->
+												<!-- Render Excel as a read-only table -->
 												{#if selectedFile?.data?.content}
 													<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
 														<tbody>
@@ -1008,19 +981,7 @@
 																	<tr>
 																		{#each row.split(',') as cell, cellIndex}
 																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
-																				<input
-																					type="text"
-																					value={cell}
-																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
-																					on:input={(e) => {
-																						// Update the cell value
-																						const rows = selectedFile.data.content.trim().split('\n');
-																						const cells = rows[rowIndex].split(',');
-																						cells[cellIndex] = e.target.value;
-																						rows[rowIndex] = cells.join(',');
-																						selectedFile.data.content = rows.join('\n');
-																					}}
-																				/>
+																				{cell}
 																			</td>
 																		{/each}
 																	</tr>
@@ -1028,21 +989,40 @@
 															{/each}
 														</tbody>
 													</table>
-													<div class="mt-2 text-xs text-gray-500">
-														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
-													</div>
 												{:else}
 													<div class="text-gray-500 text-center py-4">
 														{$i18n.t('No Excel content available')}
 													</div>
 												{/if}
 											</div>
+										{:else if selectedFile.meta.content_type === 'text/markdown' || selectedFile.filename?.toLowerCase().endsWith('.md') || selectedFile.filename?.toLowerCase().endsWith('.markdown')}
+											<div class="space-y-4">
+												<!-- Render Markdown with proper formatting -->
+												{#if selectedFile?.data?.content}
+													<div class="markdown-prose max-h-[70vh] overflow-y-auto w-full max-w-none mx-auto">
+														<Markdown
+															id={`file-${selectedFile.id}`}
+															content={selectedFile.data.content}
+															model={null}
+															save={false}
+															sourceIds={[]}
+															onSourceClick={() => {}}
+															onTaskClick={() => {}}
+														/>
+													</div>
+												{:else}
+													<div class="text-gray-500 text-center py-4">
+														{$i18n.t('No markdown content available')}
+													</div>
+												{/if}
+											</div>
 										{:else}
 											<RichTextInput
 												className="input-prose-sm"
-												bind:value={selectedFile.data.content}
-												placeholder={$i18n.t('Add content here')}
+												value={selectedFile.data.content}
+												placeholder={$i18n.t('Content will appear here')}
 												preserveBreaks={true}
+												readonly={true}
 											/>
 										{/if}
 									{:else}

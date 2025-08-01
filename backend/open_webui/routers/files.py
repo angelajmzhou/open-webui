@@ -299,50 +299,6 @@ async def get_file_data_content_by_id(id: str, user=Depends(get_verified_user)):
         )
 
 
-############################
-# Update File Data Content By Id
-############################
-
-
-class ContentForm(BaseModel):
-    content: str
-
-
-@router.post("/{id}/data/content/update")
-async def update_file_data_content_by_id(
-    request: Request, id: str, form_data: ContentForm, user=Depends(get_verified_user)
-):
-    file = Files.get_file_by_id(id)
-
-    if not file:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ERROR_MESSAGES.NOT_FOUND,
-        )
-
-    if (
-        file.user_id == user.id
-        or user.role == "admin"
-        or has_access_to_file(id, "write", user)
-    ):
-        try:
-            process_file(
-                request,
-                ProcessFileForm(file_id=id, content=form_data.content),
-                user=user,
-            )
-            file = Files.get_file_by_id(id=id)
-        except Exception as e:
-            log.exception(e)
-            log.error(f"Error processing file: {file.id}")
-
-        return {"content": file.data.get("content", "")}
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ERROR_MESSAGES.NOT_FOUND,
-        )
-
 
 ############################
 # Get File Content By Id
@@ -381,6 +337,166 @@ async def get_file_content_by_id(
                 encoded_filename = quote(filename)
                 headers = {}
 
+                # Check if this is a .doc/.docx file that should be converted to PDF
+                is_doc_file = (
+                    content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" or
+                    content_type.startswith("application/vnd.openxmlformats-officedocument.wordprocessingml") or
+                    content_type == "application/msword" or
+                    content_type.startswith("application/vnd.ms-word") or
+                    filename.lower().endswith(".docx") or
+                    filename.lower().endswith(".doc")
+                )
+
+                log.info(f"File: {filename}, Content-Type: {content_type}, is_doc_file: {is_doc_file}, attachment: {attachment}")
+
+                # For .doc/.docx files, check if PDF exists or create it
+                if is_doc_file and not attachment:
+                    pdf_path = file_path.with_suffix('.pdf')
+                    
+                    # If PDF doesn't exist or is older than original file, create it
+                    if not pdf_path.exists() or pdf_path.stat().st_mtime < file_path.stat().st_mtime:
+                        log.info(f"Creating PDF for {filename} at {pdf_path}")
+                        try:
+                            if filename.lower().endswith('.docx'):
+                                try:
+                                    import mammoth
+                                    from weasyprint import HTML
+                                    
+                                    log.info(f"Starting mammoth+weasyprint conversion for {filename}")
+                                    
+                                    # Convert .docx to HTML with formatting
+                                    with open(file_path, "rb") as docx_file:
+                                        result = mammoth.convert_to_html(docx_file)
+                                        html_content = result.value
+                                    
+                                    log.info(f"Successfully converted {filename} to HTML with mammoth")
+                                    
+                                    # Convert HTML to PDF with weasyprint
+                                    HTML(string=html_content).write_pdf(str(pdf_path))
+                                    log.info(f"Successfully converted {filename} to PDF with weasyprint")
+                                    
+                                except Exception as convert_error:
+                                    log.error(f"Failed to convert {filename} with mammoth+weasyprint: {convert_error}")
+                                    # Fallback to text extraction method
+                                    try:
+                                        from fpdf import FPDF
+                                        import docx2txt
+                                        
+                                        text_content = docx2txt.process(str(file_path))
+                                        log.info(f"Fallback: Successfully extracted text from {filename}")
+                                        
+                                        # Clean text of problematic Unicode characters
+                                        if text_content:
+                                            replacements = {
+                                                '…': '...',  # ellipsis
+                                                '"': '"',   # left double quotation mark
+                                                '"': '"',   # right double quotation mark
+                                                ''': "'",   # left single quotation mark
+                                                ''': "'",   # right single quotation mark
+                                                '–': '-',   # en dash
+                                                '—': '-',   # em dash
+                                            }
+                                            
+                                            for unicode_char, ascii_char in replacements.items():
+                                                text_content = text_content.replace(unicode_char, ascii_char)
+                                            
+                                            text_content = text_content.encode('ascii', 'replace').decode('ascii')
+
+                                        # Create PDF with FPDF
+                                        pdf = FPDF()
+                                        pdf.add_page()
+                                        pdf.set_font("Helvetica", size=12)
+                                        
+                                        lines = text_content.split('\n')
+                                        for line in lines:
+                                            if len(line) > 80:
+                                                words = line.split()
+                                                current_line = ""
+                                                for word in words:
+                                                    if len(current_line + " " + word) <= 80:
+                                                        current_line += " " + word if current_line else word
+                                                    else:
+                                                        if current_line:
+                                                            pdf.cell(0, 10, text=current_line, new_x="LMARGIN", new_y="NEXT")
+                                                        current_line = word
+                                                if current_line:
+                                                    pdf.cell(0, 10, text=current_line, new_x="LMARGIN", new_y="NEXT")
+                                            else:
+                                                pdf.cell(0, 10, text=line, new_x="LMARGIN", new_y="NEXT")
+
+                                        pdf.output(str(pdf_path))
+                                        log.info(f"Fallback: Created PDF for {filename} using FPDF")
+                                        
+                                    except Exception as fallback_error:
+                                        log.error(f"Both mammoth+weasyprint and fallback failed for {filename}: {fallback_error}")
+                                        raise fallback_error
+                            else:
+                                # For .doc files, use text extraction method
+                                try:
+                                    from fpdf import FPDF
+                                    import docx2txt
+                                    
+                                    text_content = docx2txt.process(str(file_path))
+                                except:
+                                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                        text_content = f.read()
+
+                                # Clean text and create PDF (same as fallback above)
+                                if text_content:
+                                    replacements = {
+                                        '…': '...',  # ellipsis
+                                        '"': '"',   # left double quotation mark
+                                        '"': '"',   # right double quotation mark
+                                        ''': "'",   # left single quotation mark
+                                        ''': "'",   # right single quotation mark
+                                        '–': '-',   # en dash
+                                        '—': '-',   # em dash
+                                    }
+                                    
+                                    for unicode_char, ascii_char in replacements.items():
+                                        text_content = text_content.replace(unicode_char, ascii_char)
+                                    
+                                    text_content = text_content.encode('ascii', 'replace').decode('ascii')
+
+                                pdf = FPDF()
+                                pdf.add_page()
+                                pdf.set_font("Helvetica", size=12)
+                                
+                                lines = text_content.split('\n')
+                                for line in lines:
+                                    if len(line) > 80:
+                                        words = line.split()
+                                        current_line = ""
+                                        for word in words:
+                                            if len(current_line + " " + word) <= 80:
+                                                current_line += " " + word if current_line else word
+                                            else:
+                                                if current_line:
+                                                    pdf.cell(0, 10, text=current_line, new_x="LMARGIN", new_y="NEXT")
+                                                current_line = word
+                                        if current_line:
+                                            pdf.cell(0, 10, text=current_line, new_x="LMARGIN", new_y="NEXT")
+                                    else:
+                                        pdf.cell(0, 10, text=line, new_x="LMARGIN", new_y="NEXT")
+
+                                pdf.output(str(pdf_path))
+                                log.info(f"Created PDF for {filename} using FPDF")
+                            
+                        except Exception as e:
+                            log.exception(e)
+                            log.error(f"Failed to convert {filename} to PDF: {e}")
+                    
+                    if pdf_path.exists():
+                        log.info(f"Serving PDF for {filename}: {pdf_path}")
+                        headers["Content-Disposition"] = f"inline; filename*=UTF-8''{encoded_filename}"
+                        return FileResponse(
+                            path=str(pdf_path), 
+                            headers=headers, 
+                            media_type="application/pdf"
+                        )
+                    else:
+                        log.info(f"PDF not found for {filename}, serving original file")
+
                 if attachment:
                     headers["Content-Disposition"] = (
                         f"attachment; filename*=UTF-8''{encoded_filename}"
@@ -402,6 +518,7 @@ async def get_file_content_by_id(
                             f"attachment; filename*=UTF-8''{encoded_filename}"
                         )
 
+                log.info(f"Serving original file: {filename}, Content-Type: {content_type}, Headers: {headers}")
                 return FileResponse(file_path, headers=headers, media_type=content_type)
 
             else:
@@ -422,47 +539,6 @@ async def get_file_content_by_id(
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
 
-
-@router.get("/{id}/content/html")
-async def get_html_file_content_by_id(id: str, user=Depends(get_verified_user)):
-    file = Files.get_file_by_id(id)
-
-    if not file:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ERROR_MESSAGES.NOT_FOUND,
-        )
-
-    if (
-        file.user_id == user.id
-        or user.role == "admin"
-        or has_access_to_file(id, "read", user)
-    ):
-        try:
-            file_path = Storage.get_file(file.path)
-            file_path = Path(file_path)
-
-            # Check if the file already exists in the cache
-            if file_path.is_file():
-                log.info(f"file_path: {file_path}")
-                return FileResponse(file_path)
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=ERROR_MESSAGES.NOT_FOUND,
-                )
-        except Exception as e:
-            log.exception(e)
-            log.error("Error getting file content")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=ERROR_MESSAGES.DEFAULT("Error getting file content"),
-            )
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ERROR_MESSAGES.NOT_FOUND,
-        )
 
 
 @router.get("/{id}/content/{file_name}")
@@ -566,3 +642,5 @@ async def delete_file_by_id(id: str, user=Depends(get_verified_user)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ERROR_MESSAGES.NOT_FOUND,
         )
+
+
