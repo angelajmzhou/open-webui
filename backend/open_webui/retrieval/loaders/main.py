@@ -176,7 +176,6 @@ class Loader:
     ) -> list[Document]:
         loader = self._get_loader(filename, file_content_type, file_path)
         docs = loader.load()
-
         return [
             Document(
                 page_content=ftfy.fix_text(doc.page_content), metadata=doc.metadata
@@ -257,13 +256,6 @@ class Loader:
                                 has_ocr = True
                         except Exception as e:
                             print(f"Docling OCR failed: {e}")
-                    
-                    # Convert image to base64 for transport
-                    import base64
-                    with open(self.file_path, 'rb') as f:
-                        image_data = f.read()
-                        base64_data = base64.b64encode(image_data).decode('utf-8')
-                    
                     # Store OCR text in content for search/editing
                     if has_ocr:
                         combined_content = ocr_text
@@ -277,7 +269,6 @@ class Loader:
                             "file_type": "image",
                             "has_ocr": has_ocr,
                             "ocr_text": ocr_text if has_ocr else "",
-                            "image_base64": base64_data
                         }
                     )]
             loader = ImageLoader(file_path, self.kwargs)

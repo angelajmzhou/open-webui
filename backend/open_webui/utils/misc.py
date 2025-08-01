@@ -277,6 +277,16 @@ def calculate_sha256_string(string):
     return hashed_string
 
 
+def calculate_sha256_bytes(data):
+    # Create a new SHA-256 hash object
+    sha256_hash = hashlib.sha256()
+    # Update the hash object with the binary data
+    sha256_hash.update(data)
+    # Get the hexadecimal representation of the hash
+    hashed_string = sha256_hash.hexdigest()
+    return hashed_string
+
+
 def validate_email_format(email: str) -> bool:
     if email.endswith("@localhost"):
         return True

@@ -394,7 +394,6 @@ async def get_file_content_by_id(
                         )
                         content_type = "application/pdf"
                     elif content_type.startswith("image/"):
-                        # Images should be displayed inline
                         headers["Content-Disposition"] = (
                             f"inline; filename*=UTF-8''{encoded_filename}"
                         )

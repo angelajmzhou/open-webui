@@ -750,14 +750,14 @@
 													/>
 												</div>
 												<!-- Display OCR text if available -->
-												{#if selectedFile.data.meta && selectedFile.data.meta.ocr_text}
+												{#if selectedFile.data && selectedFile.data.content && selectedFile.data.content !== '[No OCR text available]'}
 													<div class="mt-4">
 														<div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 															{$i18n.t('Extracted Text:')}
 														</div>
 														<RichTextInput
 															className="input-prose-sm"
-															bind:value={selectedFile.data.meta.ocr_text}
+															bind:value={selectedFile.data.content}
 															placeholder={$i18n.t('OCR text will appear here')}
 															preserveBreaks={true}
 														/>
@@ -765,6 +765,92 @@
 												{:else}
 													<div class="mt-4 text-sm text-gray-500 text-center">
 														{$i18n.t('No OCR text available')}
+													</div>
+												{/if}
+												</div>
+										{:else if selectedFile.meta.content_type && selectedFile.meta.content_type == 'text/csv'}
+											<div class="space-y-4">
+												<!-- Render CSV as editable table -->
+												{#if selectedFile?.data?.content}
+													<div class="overflow-x-auto">
+														<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
+															<tbody>
+																{#each selectedFile.data.content.trim().split('\n') as row, rowIndex}
+																	<tr class={rowIndex === 0 ? 'font-bold bg-gray-100 dark:bg-gray-800' : ''}>
+																		{#each row.split(',') as cell, cellIndex}
+																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
+																				<input
+																					type="text"
+																					value={cell}
+																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
+																					on:input={(e) => {
+																						// Update the cell value
+																						const rows = selectedFile.data.content.trim().split('\n');
+																						const cells = rows[rowIndex].split(',');
+																						cells[cellIndex] = e.target.value;
+																						rows[rowIndex] = cells.join(',');
+																						selectedFile.data.content = rows.join('\n');
+																					}}
+																				/>
+																			</td>
+																		{/each}
+																	</tr>
+																{/each}
+															</tbody>
+														</table>
+													</div>
+													<div class="mt-2 text-xs text-gray-500">
+														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
+													</div>
+												{:else}
+													<div class="text-gray-500 text-center py-4">
+														{$i18n.t('No CSV content available')}
+													</div>
+												{/if}
+											</div>
+										{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('excel') || selectedFile.meta.content_type.includes('spreadsheet') || selectedFile.filename?.toLowerCase().endsWith('.xlsx') || selectedFile.filename?.toLowerCase().endsWith('.xls'))}
+											<div class="space-y-4">
+												<!-- Render Excel as a table -->
+												{#if selectedFile?.data?.content}
+													<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
+														<tbody>
+															{#each selectedFile.data.content.trim().split('\n') as row, rowIndex}
+																{#if row.includes('===')}
+																	<!-- Sheet header -->
+																	<tr class="font-bold bg-blue-100 dark:bg-blue-900">
+																		<td colspan="100" class="px-2 py-1">{row}</td>
+																	</tr>
+																{:else if row.trim() !== ''}
+																	<!-- Data row -->
+																	<tr>
+																		{#each row.split(',') as cell, cellIndex}
+																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
+																				<input
+																					type="text"
+																					value={cell}
+																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
+																					on:input={(e) => {
+																						// Update the cell value
+																						const rows = selectedFile.data.content.trim().split('\n');
+																						const cells = rows[rowIndex].split(',');
+																						cells[cellIndex] = e.target.value;
+																						rows[rowIndex] = cells.join(',');
+																						selectedFile.data.content = rows.join('\n');
+																					}}
+																				/>
+																			</td>
+																		{/each}
+																	</tr>
+																{/if}
+															{/each}
+														</tbody>
+													</table>
+													<div class="mt-2 text-xs text-gray-500">
+														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
+													</div>
+												{:else}
+													<div class="text-gray-500 text-center py-4">
+														{$i18n.t('No Excel content available')}
 													</div>
 												{/if}
 											</div>
@@ -838,8 +924,9 @@
 										{#if selectedFile.meta.content_type && selectedFile.meta.content_type.startsWith('image/')}
 											<div class="space-y-4">
 												<!-- Display the image -->
+													<!--Activate fileid/content endpoint to retrieve image, trigger img get request-->
 													<img 
-														src={`${WEBUI_BASE_URL}/api/v1/files/${selectedFile.id}/content`}
+														src={`${WEBUI_BASE_URL}/api/v1/files/${selectedFile.id}/content`} 
 														alt="Uploaded image" 
 														class="max-w-full max-h-96 rounded-lg"
 														style="min-width: 100px; min-height: 100px;"
@@ -848,26 +935,105 @@
 															console.log('Image dimensions:', e.target.naturalWidth, 'x', e.target.naturalHeight);
 															console.log('Image display dimensions:', e.target.offsetWidth, 'x', e.target.offsetHeight);
 														}}
-
 													/>
 												<!-- Display OCR text if available -->
-												{#if selectedFile.data && selectedFile.data.meta && selectedFile.data.meta.ocr_text}
+												{#if selectedFile.data && selectedFile.data.content && selectedFile.data.content !== '[No OCR text available]'}
 													<div class="mt-4">
 														<div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
 															{$i18n.t('Extracted Text:')}
 														</div>
 														<RichTextInput
 															className="input-prose-sm"
-															bind:value={selectedFile.data.meta.ocr_text}
+															bind:value={selectedFile.data.content}
 															placeholder={$i18n.t('OCR text will appear here')}
 															preserveBreaks={true}
 														/>
 													</div>
+												{/if}
+											</div>
+										{:else if selectedFile.meta.content_type && selectedFile.meta.content_type == 'text/csv'}
+											<div class="space-y-4">
+												<!-- Render CSV as editable table -->
+												{#if selectedFile?.data?.content}
+													<div class="overflow-x-auto">
+														<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
+															<tbody>
+																{#each selectedFile.data.content.trim().split('\n') as row, rowIndex}
+																	<tr class={rowIndex === 0 ? 'font-bold bg-gray-100 dark:bg-gray-800' : ''}>
+																		{#each row.split(',') as cell, cellIndex}
+																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
+																				<input
+																					type="text"
+																					value={cell}
+																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
+																					on:input={(e) => {
+																						// Update the cell value
+																						const rows = selectedFile.data.content.trim().split('\n');
+																						const cells = rows[rowIndex].split(',');
+																						cells[cellIndex] = e.target.value;
+																						rows[rowIndex] = cells.join(',');
+																						selectedFile.data.content = rows.join('\n');
+																					}}
+																				/>
+																			</td>
+																		{/each}
+																	</tr>
+																{/each}
+															</tbody>
+														</table>
+													</div>
+													<div class="mt-2 text-xs text-gray-500">
+														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
+													</div>
 												{:else}
-													<div class="mt-4 text-sm text-gray-500 text-center">
-														<div>{$i18n.t('No OCR text available')}</div>
-														<div class="text-xs mt-1">Debug: {JSON.stringify(selectedFile.data?.meta || 'No meta data')}</div>
-														<div class="text-xs mt-1">Content preview: {selectedFile.data.content ? selectedFile.data.content.substring(0, 100) + '...' : 'No content'}</div>
+													<div class="text-gray-500 text-center py-4">
+														{$i18n.t('No CSV content available')}
+													</div>
+												{/if}
+											</div>
+										{:else if selectedFile.meta.content_type && (selectedFile.meta.content_type.includes('excel') || selectedFile.meta.content_type.includes('spreadsheet') || selectedFile.filename?.toLowerCase().endsWith('.xlsx') || selectedFile.filename?.toLowerCase().endsWith('.xls'))}
+											<div class="space-y-4">
+												<!-- Render Excel as a table -->
+												{#if selectedFile?.data?.content}
+													<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-xs">
+														<tbody>
+															{#each selectedFile.data.content.trim().split('\n') as row, rowIndex}
+																{#if row.includes('===')}
+																	<!-- Sheet header -->
+																	<tr class="font-bold bg-blue-100 dark:bg-blue-900">
+																		<td colspan="100" class="px-2 py-1">{row}</td>
+																	</tr>
+																{:else if row.trim() !== ''}
+																	<!-- Data row -->
+																	<tr>
+																		{#each row.split(',') as cell, cellIndex}
+																			<td class="px-2 py-1 border border-gray-100 dark:border-gray-800">
+																				<input
+																					type="text"
+																					value={cell}
+																					class="w-full bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-500 dark:text-gray-200"
+																					on:input={(e) => {
+																						// Update the cell value
+																						const rows = selectedFile.data.content.trim().split('\n');
+																						const cells = rows[rowIndex].split(',');
+																						cells[cellIndex] = e.target.value;
+																						rows[rowIndex] = cells.join(',');
+																						selectedFile.data.content = rows.join('\n');
+																					}}
+																				/>
+																			</td>
+																		{/each}
+																	</tr>
+																{/if}
+															{/each}
+														</tbody>
+													</table>
+													<div class="mt-2 text-xs text-gray-500">
+														{$i18n.t('Click any cell to edit. Click Save to apply changes.')}
+													</div>
+												{:else}
+													<div class="text-gray-500 text-center py-4">
+														{$i18n.t('No Excel content available')}
 													</div>
 												{/if}
 											</div>

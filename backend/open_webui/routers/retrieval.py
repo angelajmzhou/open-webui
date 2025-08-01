@@ -72,6 +72,7 @@ from open_webui.retrieval.utils import (
 )
 from open_webui.utils.misc import (
     calculate_sha256_string,
+    calculate_sha256_bytes,
 )
 from open_webui.utils.auth import get_admin_user, get_verified_user
 
@@ -969,28 +970,223 @@ def process_file(
         if form_data.content:
             # Update the content in the file
             # Usage: /files/{file_id}/data/content/update, /files/ (audio file upload pipeline)
+            
+            log.info(f"[CSV UPDATE] Starting content update for file {file.id} ({file.filename})")
+            log.info(f"[CSV UPDATE] Content type: {file.meta.get('content_type')}")
+            log.info(f"[CSV UPDATE] Content length: {len(form_data.content)} characters")
+            log.info(f"[CSV UPDATE] First 200 chars of new content: {form_data.content[:200]}...")
+            
+            # Check if this is an Excel file
+            is_excel = (file.meta.get("content_type") in [
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ] or file.filename.lower().endswith(('.xls', '.xlsx')))
+            
+            log.info(f"[CSV UPDATE] File content type: {file.meta.get('content_type')}")
+            log.info(f"[CSV UPDATE] File extension: {file.filename.lower()}")
+            log.info(f"[CSV UPDATE] Is Excel file: {is_excel}")
+            
+            if is_excel:
+                log.info(f"[CSV UPDATE] Detected Excel file: {file.filename}")
+                log.info(f"[CSV UPDATE] Excel content contains sheet headers: {'===' in form_data.content}")
 
             try:
                 # /files/{file_id}/data/content/update
+                log.info(f"[CSV UPDATE] Deleting old collection: file-{file.id}")
                 VECTOR_DB_CLIENT.delete_collection(collection_name=f"file-{file.id}")
-            except:
+                log.info(f"[CSV UPDATE] Successfully deleted old collection")
+            except Exception as e:
                 # Audio file upload pipeline
+                log.warning(f"[CSV UPDATE] Error deleting collection (this is normal for audio files): {e}")
                 pass
 
-            docs = [
-                Document(
-                    page_content=form_data.content.replace("<br/>", "\n"),
-                    metadata={
-                        **file.meta,
-                        "name": file.filename,
-                        "created_by": file.user_id,
-                        "file_id": file.id,
-                        "source": file.filename,
-                    },
-                )
-            ]
+            log.info(f"[CSV UPDATE] DEBUG: About to check file type conditions")
+            log.info(f"[CSV UPDATE] DEBUG: Content type check: {file.meta.get('content_type')} == 'text/csv'")
+            
+            # For CSV files, use the same CSVLoader format as initial upload
+            if file.meta.get("content_type") == "text/csv":
+                log.info(f"[CSV UPDATE] Processing CSV file with CSVLoader")
+                
+                # Create a temporary file with the updated content
+                import tempfile
+                import os
+                
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as temp_file:
+                    temp_file.write(form_data.content)
+                    temp_file_path = temp_file.name
+                    log.info(f"[CSV UPDATE] Created temporary CSV file: {temp_file_path}")
+                    log.info(f"[CSV UPDATE] Temporary file size: {os.path.getsize(temp_file_path)} bytes")
+                
+                try:
+                    # Use the same Loader as initial upload
+                    log.info(f"[CSV UPDATE] Creating Loader with engine: {request.app.state.config.CONTENT_EXTRACTION_ENGINE}")
+                    loader = Loader(
+                        engine=request.app.state.config.CONTENT_EXTRACTION_ENGINE,
+                        TIKA_SERVER_URL=request.app.state.config.TIKA_SERVER_URL,
+                        DOCLING_SERVER_URL=request.app.state.config.DOCLING_SERVER_URL,
+                        PDF_EXTRACT_IMAGES=request.app.state.config.PDF_EXTRACT_IMAGES,
+                        DOCUMENT_INTELLIGENCE_ENDPOINT=request.app.state.config.DOCUMENT_INTELLIGENCE_ENDPOINT,
+                        DOCUMENT_INTELLIGENCE_KEY=request.app.state.config.DOCUMENT_INTELLIGENCE_KEY,
+                        MISTRAL_OCR_API_KEY=request.app.state.config.MISTRAL_OCR_API_KEY,
+                    )
+                    
+                    # Load with CSVLoader (same as initial upload)
+                    log.info(f"[CSV UPDATE] Loading documents with CSVLoader")
+                    docs = loader.load(file.filename, file.meta.get("content_type"), temp_file_path)
+                    log.info(f"[CSV UPDATE] CSVLoader created {len(docs)} documents")
+                    
+                    # Log first few documents for debugging
+                    for i, doc in enumerate(docs[:3]):
+                        log.info(f"[CSV UPDATE] Document {i}: {doc.page_content[:100]}...")
+                    
+                    # Add metadata like initial upload
+                    log.info(f"[CSV UPDATE] Adding metadata to documents")
+                    docs = [
+                        Document(
+                            page_content=doc.page_content,
+                            metadata={
+                                **doc.metadata,
+                                "name": file.filename,
+                                "created_by": file.user_id,
+                                "file_id": file.id,
+                                "source": file.filename,
+                            },
+                        )
+                        for doc in docs
+                    ]
+                    log.info(f"[CSV UPDATE] Final document count: {len(docs)}")
+                    
+                finally:
+                    # Clean up temporary file
+                    log.info(f"[CSV UPDATE] Cleaning up temporary file: {temp_file_path}")
+                    os.unlink(temp_file_path)
+            
+            # For Excel files, update the actual Excel file and regenerate embeddings
+            elif file.meta.get("content_type") in [
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ] or file.filename.lower().endswith(('.xls', '.xlsx')):
+                log.info(f"[CSV UPDATE] Processing Excel file with xlsxwriter")
+                
+                import tempfile
+                import os
+                import xlsxwriter
+                
+                # Parse the updated content back into Excel format
+                log.info(f"[CSV UPDATE] Parsing updated Excel content")
+                sheet_data = {}
+                current_sheet = None
+                current_rows = []
+                
+                for line in form_data.content.strip().split('\n'):
+                    if line.startswith('=== Sheet: ') and line.endswith(' ==='):
+                        # Save previous sheet data
+                        if current_sheet and current_rows:
+                            sheet_data[current_sheet] = current_rows
+                        
+                        # Start new sheet
+                        current_sheet = line.replace('=== Sheet: ', '').replace(' ===', '')
+                        current_rows = []
+                    elif line.strip() and current_sheet:
+                        # Parse CSV row
+                        row = [cell.strip() for cell in line.split(',')]
+                        current_rows.append(row)
+                
+                # Save the last sheet
+                if current_sheet and current_rows:
+                    sheet_data[current_sheet] = current_rows
+                
+                log.info(f"[CSV UPDATE] Parsed {len(sheet_data)} sheets: {list(sheet_data.keys())}")
+                
+                # Create new Excel file with updated content
+                temp_excel_path = tempfile.mktemp(suffix='.xlsx')
+                log.info(f"[CSV UPDATE] Creating new Excel file: {temp_excel_path}")
+                
+                try:
+                    workbook = xlsxwriter.Workbook(temp_excel_path)
+                    
+                    # Add each sheet with updated data
+                    for sheet_name, rows in sheet_data.items():
+                        log.info(f"[CSV UPDATE] Writing sheet '{sheet_name}' with {len(rows)} rows")
+                        worksheet = workbook.add_worksheet(sheet_name)
+                        
+                        for row_idx, row in enumerate(rows):
+                            for col_idx, cell_value in enumerate(row):
+                                worksheet.write(row_idx, col_idx, cell_value)
+                    
+                    workbook.close()
+                    log.info(f"[CSV UPDATE] Excel file created successfully: {temp_excel_path}")
+                    log.info(f"[CSV UPDATE] New Excel file size: {os.path.getsize(temp_excel_path)} bytes")
+                    
+                    # Update the original file with the new Excel content
+                    log.info(f"[CSV UPDATE] Updating original file: {file.path}")
+                    with open(temp_excel_path, 'rb') as new_file:
+                        with open(file.path, 'wb') as original_file:
+                            original_file.write(new_file.read())
+                    log.info(f"[CSV UPDATE] Original file updated successfully")
+                    
+                    # Use the same Loader as initial upload to regenerate embeddings
+                    log.info(f"[CSV UPDATE] Creating Loader with engine: {request.app.state.config.CONTENT_EXTRACTION_ENGINE}")
+                    loader = Loader(
+                        engine=request.app.state.config.CONTENT_EXTRACTION_ENGINE,
+                        TIKA_SERVER_URL=request.app.state.config.TIKA_SERVER_URL,
+                        DOCLING_SERVER_URL=request.app.state.config.DOCLING_SERVER_URL,
+                        PDF_EXTRACT_IMAGES=request.app.state.config.PDF_EXTRACT_IMAGES,
+                        DOCUMENT_INTELLIGENCE_ENDPOINT=request.app.state.config.DOCUMENT_INTELLIGENCE_ENDPOINT,
+                        DOCUMENT_INTELLIGENCE_KEY=request.app.state.config.DOCUMENT_INTELLIGENCE_KEY,
+                        MISTRAL_OCR_API_KEY=request.app.state.config.MISTRAL_OCR_API_KEY,
+                    )
+                    
+                    # Load with Excel loader (same as initial upload)
+                    log.info(f"[CSV UPDATE] Loading documents with Excel loader")
+                    docs = loader.load(file.filename, file.meta.get("content_type"), file.path)
+                    log.info(f"[CSV UPDATE] Excel loader created {len(docs)} documents")
+                    
+                    # Log first few documents for debugging
+                    for i, doc in enumerate(docs[:3]):
+                        log.info(f"[CSV UPDATE] Document {i}: {doc.page_content[:100]}...")
+                    
+                    # Add metadata like initial upload
+                    log.info(f"[CSV UPDATE] Adding metadata to documents")
+                    docs = [
+                        Document(
+                            page_content=doc.page_content,
+                            metadata={
+                                **doc.metadata,
+                                "name": file.filename,
+                                "created_by": file.user_id,
+                                "file_id": file.id,
+                                "source": file.filename,
+                            },
+                        )
+                        for doc in docs
+                    ]
+                    log.info(f"[CSV UPDATE] Final document count: {len(docs)}")
+                    
+                finally:
+                    # Clean up temporary Excel file
+                    if os.path.exists(temp_excel_path):
+                        log.info(f"[CSV UPDATE] Cleaning up temporary Excel file: {temp_excel_path}")
+                        os.unlink(temp_excel_path)
+            else:
+                # For non-CSV files, use the original approach
+                log.info(f"[CSV UPDATE] Processing non-CSV file with direct Document creation")
+                docs = [
+                    Document(
+                        page_content=form_data.content.replace("<br/>", "\n"),
+                        metadata={
+                            **file.meta,
+                            "name": file.filename,
+                            "created_by": file.user_id,
+                            "file_id": file.id,
+                            "source": file.filename,
+                        },
+                    )
+                ]
+                log.info(f"[CSV UPDATE] Created {len(docs)} documents for non-CSV file")
 
             text_content = form_data.content
+            log.info(f"[CSV UPDATE] Set text_content length: {len(text_content)}")
         elif form_data.collection_name:
             # Check if the file has already been processed and save the content
             # Usage: /knowledge/{id}/file/add, /knowledge/{id}/file/update
@@ -1067,12 +1263,46 @@ def process_file(
                         },
                     )
                 ]
-            text_content = " ".join([doc.page_content for doc in docs])
+            #start==edit
+            # For CSV and Excel files, read original file content for display while using loaders for embeddings
+            if file.meta.get("content_type") == "text/csv":
+                # Read the original CSV file content for display
+                with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    text_content = f.read()
+            elif file.meta.get("content_type") in [
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ] or file.filename.lower().endswith(('.xls', '.xlsx')):
+                # Convert Excel to CSV-like format for display
+                import pandas as pd
+                try:
+                    # Read all sheets
+                    excel_file = pd.ExcelFile(file_path)
+                    sheet_contents = []
+                    
+                    for sheet_name in excel_file.sheet_names:
+                        df = pd.read_excel(file_path, sheet_name=sheet_name)
+                        sheet_contents.append(f"=== Sheet: {sheet_name} ===")
+                        sheet_contents.append("")
+                        
+                        # Convert to CSV with proper formatting
+                        csv_content = df.to_csv(index=False)
+                        sheet_contents.append(csv_content)
+                        sheet_contents.append("")
+                        sheet_contents.append("")  # Extra spacing between sheets
+                    
+                    text_content = "\n".join(sheet_contents)
+                except Exception as e:
+                    # Fallback to binary if pandas fails
+                    with open(file_path, 'rb') as f:
+                        text_content = f"Excel file (binary data): {str(e)}"
+            else:
+            #end==edit
+                text_content = "\n".join([doc.page_content for doc in docs])
 
         log.debug(f"text_content: {text_content}")
         
-        # For images, also store OCR text in file data
-        file_data_update = {"content": text_content}
+        # For images, store OCR text in content field
         if file.meta.get("content_type", "").startswith("image/"):
             # Extract OCR text from document metadata
             ocr_text = None
@@ -1082,32 +1312,41 @@ def process_file(
                     break
             
             if ocr_text:
-                file_data_update["meta"] = {"ocr_text": ocr_text}
+                file_data_update = {"content": ocr_text}
+            else:
+                file_data_update = {"content": "[No OCR text available]"}
+        else:
+            file_data_update = {"content": text_content}
+        
+        log.info(f"[CSV UPDATE] Updating file data in database for file {file.id}")
+        log.info(f"[CSV UPDATE] File data update: {file_data_update}")
         
         Files.update_file_data_by_id(
             file.id,
             file_data_update,
         )
+        log.info(f"[CSV UPDATE] File data updated successfully")
 
-        # For images, use base64 data for hash to detect actual duplicate images
+        # For images, use binary data for hash to detect actual duplicate images
         if file.meta.get("content_type", "").startswith("image/"):
-            # Get the base64 data from the document metadata
-            image_base64 = None
-            for doc in docs:
-                if doc.metadata.get("image_base64"):
-                    image_base64 = doc.metadata["image_base64"]
-                    break
-            
-            if image_base64:
-                hash = calculate_sha256_string(image_base64)
+            # Get the binary data from the document metadata
+            with open(file.path, 'rb') as f:
+                image_binary = f.read()     
+            if image_binary:
+                hash = calculate_sha256_bytes(image_binary)
             else:
-                # Fallback to file ID if base64 not available
+                # Fallback to file ID if binary data not available
                 hash = calculate_sha256_string(f"{file.id}:{text_content}")
         else:
             hash = calculate_sha256_string(text_content)
         Files.update_file_hash_by_id(file.id, hash)
 
         if not request.app.state.config.BYPASS_EMBEDDING_AND_RETRIEVAL:
+            log.info(f"[CSV UPDATE] Starting embedding generation and vector DB save")
+            log.info(f"[CSV UPDATE] Collection name: {collection_name}")
+            log.info(f"[CSV UPDATE] Number of documents to embed: {len(docs)}")
+            log.info(f"[CSV UPDATE] Hash: {hash}")
+            
             try:
                 result = save_docs_to_vector_db(
                     request,
@@ -1123,13 +1362,18 @@ def process_file(
                 )
 
                 if result:
+                    log.info(f"[CSV UPDATE] Embedding generation successful")
+                    log.info(f"[CSV UPDATE] Updating file metadata with collection name: {collection_name}")
+                    
                     Files.update_file_metadata_by_id(
                         file.id,
                         {
                             "collection_name": collection_name,
                         },
                     )
+                    log.info(f"[CSV UPDATE] File metadata updated successfully")
 
+                    log.info(f"[CSV UPDATE] CSV update completed successfully for file {file.id}")
                     return {
                         "status": True,
                         "collection_name": collection_name,
@@ -1137,6 +1381,8 @@ def process_file(
                         "content": text_content,
                     }
             except Exception as e:
+                log.error(f"[CSV UPDATE] Error during embedding generation: {e}")
+                log.error(f"[CSV UPDATE] Exception type: {type(e).__name__}")
                 raise e
         else:
             return {
