@@ -17,6 +17,7 @@
 
 	export let prompt = '';
 	export let files = [];
+	export let fileUpload = true;
 
 	let loading = false;
 	let commandElement = null;
@@ -56,8 +57,8 @@
 {#if show}
 	{#if !loading}
 		{#if command?.charAt(0) === '/'}
-			<Prompts bind:this={commandElement} bind:prompt bind:files {command} />
-		{:else if (command?.charAt(0) === '#' && command.startsWith('#') && !command.includes('# ')) || ('\\#' === command.slice(0, 2) && command.startsWith('#') && !command.includes('# '))}
+			<Prompts bind:this={commandElement} bind:prompt bind:files bind:fileUpload {command} />
+		{:else if ((command?.charAt(0) === '#' && command.startsWith('#') && !command.includes('# ')) || ('\\#' === command.slice(0, 2) && command.startsWith('#') && !command.includes('# '))) && fileUpload}
 			<Knowledge
 				bind:this={commandElement}
 				bind:prompt

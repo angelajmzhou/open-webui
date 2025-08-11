@@ -17,7 +17,6 @@
 	import CameraSolid from '$lib/components/icons/CameraSolid.svelte';
 	import PhotoSolid from '$lib/components/icons/PhotoSolid.svelte';
 	import CommandLineSolid from '$lib/components/icons/CommandLineSolid.svelte';
-
 	const i18n = getContext('i18n');
 
 	export let screenCaptureHandler: Function;
@@ -30,6 +29,7 @@
 	export let selectedToolIds: string[] = [];
 
 	export let onClose: Function;
+	export let fileUpload: boolean = true;
 
 	let tools = {};
 	let show = false;
@@ -39,7 +39,7 @@
 	}
 
 	let fileUploadEnabled = true;
-	$: fileUploadEnabled = $user?.role === 'admin' || $user?.permissions?.chat?.file_upload;
+	$: fileUploadEnabled = ($user?.role === 'admin' || $user?.permissions?.chat?.file_upload);
 
 	const init = async () => {
 		if ($_tools === null) {
@@ -55,7 +55,7 @@
 			return a;
 		}, {});
 	};
-
+	
 	const detectMobile = () => {
 		const userAgent = navigator.userAgent || navigator.vendor || window.opera;
 		return /android|iphone|ipad|ipod|windows phone/i.test(userAgent);

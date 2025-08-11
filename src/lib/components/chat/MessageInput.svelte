@@ -31,6 +31,7 @@
 	import { uploadFile } from '$lib/apis/files';
 	import { generateAutoCompletion } from '$lib/apis';
 	import { deleteFileById } from '$lib/apis/files';
+	import Switch from '$lib/components/common/Switch.svelte';
 
 	import { WEBUI_BASE_URL, WEBUI_API_BASE_URL, PASTED_TEXT_CHARACTER_LIMIT } from '$lib/constants';
 
@@ -101,7 +102,7 @@
 
 	let chatInputContainerElement;
 	let chatInputElement;
-
+	let fileUpload = true;
 	let filesInputElement;
 	let commandsElement;
 
@@ -435,6 +436,7 @@
 						bind:this={commandsElement}
 						bind:prompt
 						bind:files
+						bind:fileUpload
 						on:upload={(e) => {
 							dispatch('upload', e.detail);
 						}}
@@ -1036,11 +1038,13 @@
 
 								<div class=" flex justify-between mt-1 mb-2.5 mx-0.5 max-w-full" dir="ltr">
 									<div class="ml-1 self-end flex items-center flex-1 max-w-[80%] gap-0.5">
-										<InputMenu
-											bind:selectedToolIds
-											{screenCaptureHandler}
-											{inputFilesHandler}
-											uploadFilesHandler={() => {
+									{#if fileUpload}
+											<InputMenu
+												bind:selectedToolIds
+												bind:fileUpload
+												{screenCaptureHandler}
+												{inputFilesHandler}
+												uploadFilesHandler={() => {
 												filesInputElement.click();
 											}}
 											uploadGoogleDriveHandler={async () => {
@@ -1085,23 +1089,35 @@
 												chatInput?.focus();
 											}}
 										>
-											<button
-												class="bg-transparent hover:bg-gray-100 text-gray-800 dark:text-white dark:hover:bg-gray-800 transition rounded-full p-1.5 outline-hidden focus:outline-hidden"
-												type="button"
-												aria-label="More"
-											>
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													viewBox="0 0 20 20"
-													fill="currentColor"
-													class="size-5"
+											{#if fileUpload}
+												<button
+													class="bg-transparent hover:bg-gray-100 text-gray-800 dark:text-white dark:hover:bg-gray-800 transition rounded-full p-1.5 outline-hidden focus:outline-hidden"
+													type="button"
+													aria-label="More"
 												>
-													<path
-														d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
-													/>
-												</svg>
-											</button>
-										</InputMenu>
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														viewBox="0 0 20 20"
+														fill="currentColor"
+														class="size-5"
+													>
+														<path
+															d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
+														/>
+													</svg>
+												</button>
+											{/if}
+									
+											</InputMenu>
+										{/if}
+										<div class="flex items-center justify-center">	
+											<Tooltip content={fileUpload ? $i18n.t('File Upload') : $i18n.t('Free Chat')}>
+												<Switch
+													bind:state={fileUpload}
+													aria-label="Free Chat"
+												/>
+											</Tooltip>
+										</div>
 
 										<div class="flex gap-1 items-center overflow-x-auto scrollbar-none flex-1">
 											{#if toolServers.length + selectedToolIds.length > 0}
